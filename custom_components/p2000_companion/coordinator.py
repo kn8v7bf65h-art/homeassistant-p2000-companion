@@ -22,6 +22,7 @@ from .const import (
     DOMAIN,
     EVENT_FEED_ALERT,
     EVENT_FILTERED_ALERT,
+    EVENT_LEGACY_FILTERED_ALERT,
 )
 from .parser import Alert, parse_entry
 
@@ -83,7 +84,10 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
 
             if self._matches_filters(alert):
                 self.last_filtered_alert = alert
-                self.hass.bus.async_fire(EVENT_FILTERED_ALERT, alert.as_event_data())
+                event_data = alert.as_event_data()
+                self.hass.bus.async_fire(EVENT_FILTERED_ALERT, event_data)
+                # Backwards compatibility for automations created before v0.1.5.
+                self.hass.bus.async_fire(EVENT_LEGACY_FILTERED_ALERT, event_data)
 
         # Keep seen cache bounded.
         if len(self._seen_ids) > 500:
