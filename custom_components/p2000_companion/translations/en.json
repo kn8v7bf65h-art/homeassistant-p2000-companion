@@ -1,0 +1,34 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up P2000 Companion",
+        "description": "Enter the RSS feed and optional filters. Separate multiple values with commas.",
+        "data": {
+          "feed_url": "RSS feed URL",
+          "cities": "Cities",
+          "services": "Services",
+          "priorities": "Priorities",
+          "exclude_words": "Exclude words",
+          "scan_interval": "Scan interval in seconds"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "P2000 Companion options",
+        "description": "Change your filters. The feed always fires p2000_feed_alert for every new item.",
+        "data": {
+          "feed_url": "RSS feed URL",
+          "cities": "Cities",
+          "services": "Services",
+          "priorities": "Priorities",
+          "exclude_words": "Exclude words",
+          "scan_interval": "Scan interval in seconds"
+        }
+      }
+    }
+  }
+}

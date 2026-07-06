@@ -1,0 +1,34 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "P2000 Companion instellen",
+        "description": "Vul de RSS-feed en optionele filters in. Meerdere waarden kun je scheiden met komma's.",
+        "data": {
+          "feed_url": "RSS-feed URL",
+          "cities": "Plaatsen",
+          "services": "Diensten",
+          "priorities": "Prioriteiten",
+          "exclude_words": "Woorden uitsluiten",
+          "scan_interval": "Verversinterval in seconden"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "P2000 Companion opties",
+        "description": "Pas je filters aan. De feed blijft altijd alle nieuwe meldingen als p2000_feed_alert event afvuren.",
+        "data": {
+          "feed_url": "RSS-feed URL",
+          "cities": "Plaatsen",
+          "services": "Diensten",
+          "priorities": "Prioriteiten",
+          "exclude_words": "Woorden uitsluiten",
+          "scan_interval": "Verversinterval in seconden"
+        }
+      }
+    }
+  }
+}

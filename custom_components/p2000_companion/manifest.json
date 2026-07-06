@@ -1,0 +1,12 @@
+{
+  "domain": "p2000_companion",
+  "name": "P2000 Companion",
+  "codeowners": ["@kn8v7bf65h-art"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion/issues",
+  "requirements": ["feedparser==6.0.11"],
+  "version": "0.1.0"
+}
