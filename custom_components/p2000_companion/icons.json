@@ -1,0 +1,12 @@
+{
+  "entity": {
+    "sensor": {
+      "last_alert": {
+        "default": "mdi:alarm-light"
+      },
+      "last_filtered_alert": {
+        "default": "mdi:alarm-light"
+      }
+    }
+  }
+}
