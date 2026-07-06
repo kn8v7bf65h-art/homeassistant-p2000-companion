@@ -29,11 +29,13 @@ CITY_ALIASES = {
 PRIORITY_PATTERNS = [
     (r"\b(?:A\s*1|P\s*1|PRIO\s*1)\b", "P1"),
     (r"\b(?:A\s*2|P\s*2|PRIO\s*2)\b", "P2"),
-    (r"\b(?:B\s*1|P\s*3|PRIO\s*3)\b", "P3"),
+    (r"\b(?:P\s*3|PRIO\s*3)\b", "P3"),
+    (r"\bB\s*1\b", "B1"),
+    (r"\bB\s*2\b", "B2"),
 ]
 
 SERVICE_PATTERNS = [
-    (r"\b(ambulance|ambu|a\s*[12]\b|rapid responder|zorgambulance)\b", "ambulance"),
+    (r"\b(ambulance|ambu|a\s*[12]\b|b\s*[12]\b|rapid responder|zorgambulance|medium care)\b", "ambulance"),
     (r"\b(brandweer|brand|buitenbrand|binnenbrand|middelbrand|grote brand|oms|buitenmelding|buitensluiting|bdh-|ts\b)\b", "fire"),
     (r"\b(politie|prio\s*[123]|ongeval wegvervoer|aanrijding|overval|inbraak)\b", "police"),
     (r"\b(lifeliner|lfl\d|mmt|traumaheli)\b", "mmt"),

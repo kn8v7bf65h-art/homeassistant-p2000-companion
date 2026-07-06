@@ -1,95 +1,59 @@
 # P2000 Companion
 
-Custom Home Assistant integration for reading P2000 RSS feeds and firing events.
+Custom Home Assistant integratie voor P2000/RSS-meldingen.
 
 ## Features
 
-- Add via **Settings → Devices & services**
-- Change filters via **Configure / Options**
-- RSS feed polling with one central listener
-- Always fires an event for every new feed item: `p2000_feed_alert`
-- Fires a filtered event for matching alerts: `p2000_new_alert`
-- Filters for cities, services, priorities and excluded words
-- Normalizes priority formats like `A1`, `P 1`, `P1`, `PRIO 1` to `P1`
-- Creates two sensors:
-  - `P2000 Last Feed Alert`
-  - `P2000 Last Filtered Alert`
+- Leest een P2000 RSS-feed, standaard Haaglanden.
+- Configuratie via **Instellingen → Apparaten & diensten**.
+- Opties aanpassen zonder YAML.
+- Parser voor o.a. `A1`, `A2`, `B1`, `B2`, `P 1`, `P 2`, `PRIO 1`, `PRIO 2`.
+- Dienstnormalisatie:
+  - `ambulance`
+  - `fire`
+  - `police`
+  - `mmt`
+  - `lifeboat`
+- Events:
+  - `p2000_feed_alert` voor iedere nieuwe feedmelding.
+  - `p2000_filtered_alert` voor iedere nieuwe melding die aan jouw filters voldoet.
+  - `p2000_new_alert` blijft bestaan als legacy alias van `p2000_filtered_alert`.
+- Sensoren:
+  - `sensor.p2000_last_feed_alert`
+  - `sensor.p2000_last_filtered_alert`
 
-## Installation with HACS
+## Belangrijk in v0.2.0
 
-1. In Home Assistant, open **HACS → Integrations**.
-2. Open **⋮ → Custom repositories**.
-3. Add your repository URL.
-4. Category: **Integration**.
-5. Install **P2000 Companion**.
-6. Restart Home Assistant.
-7. Add the integration via **Settings → Devices & services → Add integration → P2000 Companion**.
+Vanaf v0.2.0 worden **alle nieuwe meldingen** verwerkt. Als er tijdens één feed-update drie nieuwe meldingen binnenkomen, worden er ook drie events afgevuurd.
 
-Recommended feed for Haaglanden:
+De integratie bewaart bekende melding-ID's persistent in Home Assistant storage. Daardoor krijg je na een herstart niet opnieuw oude meldingen als event.
+
+## Voorbeeld automation
+
+```yaml
+alias: P2000 ambulance gefilterd
+triggers:
+  - trigger: event
+    event_type: p2000_filtered_alert
+conditions:
+  - condition: template
+    value_template: "{{ trigger.event.data.service == 'ambulance' }}"
+actions:
+  - action: notify.pushover
+    data:
+      title: "🚑 Ambulance melding"
+      message: "{{ trigger.event.data.summary }}"
+mode: single
+```
+
+## Feed
+
+Voor Haaglanden:
 
 ```text
 https://alarmeringen.nl/feeds/region/haaglanden.rss
 ```
 
-Example filters:
+## HACS
 
-```text
-Cities: Honselersdijk, Naaldwijk, De Lier
-Services: ambulance, brandweer, politie
-Priorities: P1, P2
-Exclude words: test, oefening
-```
-
-## Events
-
-### All feed alerts
-
-```text
-p2000_feed_alert
-```
-
-This event is fired for every new item in the RSS feed, even if it does not match your filters.
-
-### Filtered alerts
-
-```text
-p2000_new_alert
-```
-
-This event is only fired when the alert matches your configured filters.
-
-Example automation:
-
-```yaml
-alias: P2000 Honselersdijk alarm
-trigger:
-  - platform: event
-    event_type: p2000_new_alert
-action:
-  - service: notify.pushover
-    data:
-      title: "🚨 P2000 melding"
-      message: "{{ trigger.event.data.title }}"
-mode: single
-```
-
-## Development notes
-
-- Config-flow is enabled.
-- Options-flow can update feed URL, places, services, priorities, exclude words and scan interval.
-- The feed URL used by the coordinator now follows options changes after reload.
-
-
-## v0.1.4
-
-Bugfix: `CONF_SCAN_INTERVAL` import toegevoegd zodat setup niet meer crasht.
-
-Diensten worden nu intern genormaliseerd naar vaste Engelse waarden:
-
-- `ambulance`
-- `fire`
-- `police`
-- `mmt`
-- `lifeboat`
-
-Nederlandse invoer zoals `brandweer`, `politie` en `traumaheli` wordt automatisch omgezet.
+Voeg deze repository toe als custom repository in HACS met categorie **Integration**.

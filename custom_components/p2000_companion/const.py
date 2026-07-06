@@ -14,9 +14,10 @@ CONF_EXCLUDE_WORDS = "exclude_words"
 CONF_SCAN_INTERVAL = "scan_interval"
 
 EVENT_FEED_ALERT = "p2000_feed_alert"
-EVENT_FILTERED_ALERT = "p2000_new_alert"
+EVENT_FILTERED_ALERT = "p2000_filtered_alert"
+EVENT_LEGACY_FILTERED_ALERT = "p2000_new_alert"
 
 PLATFORMS = ["sensor"]
 
 SERVICE_OPTIONS = ["ambulance", "fire", "police", "mmt", "lifeboat"]
-PRIORITY_OPTIONS = ["P1", "P2", "P3"]
+PRIORITY_OPTIONS = ["P1", "P2", "P3", "B1", "B2"]

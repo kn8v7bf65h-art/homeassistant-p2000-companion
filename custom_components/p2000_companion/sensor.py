@@ -47,6 +47,8 @@ class P2000LastAlertSensor(CoordinatorEntity[P2000Coordinator], SensorEntity):
         base = {
             "feed_url": self.coordinator.feed_url,
             "alerts_in_feed": self.coordinator.last_update_success_count,
+            "new_alerts_last_update": self.coordinator.last_new_alerts_count,
+            "filtered_alerts_last_update": self.coordinator.last_filtered_alerts_count,
         }
         if not alert:
             return base

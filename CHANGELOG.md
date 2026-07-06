@@ -1,27 +1,30 @@
 # Changelog
 
-## v0.1.4
-- Fixed missing `CONF_SCAN_INTERVAL` import in coordinator.
-- Normalized service filters to stable internal values: `ambulance`, `fire`, `police`, `mmt`, `lifeboat`.
-- Dutch service input such as `brandweer`, `politie`, and `traumaheli` is accepted and converted automatically.
+## v0.2.0
 
-# Changelog
+- Verwerkt nu alle nieuwe RSS-items per update, niet alleen de meest recente.
+- Vuurt één `p2000_feed_alert` event af per nieuwe feedmelding.
+- Vuurt één `p2000_filtered_alert` event af per nieuwe melding die aan de filters voldoet.
+- Houdt een persistente cache met bekende meldingen bij in Home Assistant storage.
+- Voorkomt daardoor dubbele events na een herstart.
+- Sensorattributen toegevoegd:
+  - `new_alerts_last_update`
+  - `filtered_alerts_last_update`
+
+## v0.1.5
+
+- `B1` en `B2` prioriteiten toegevoegd.
+- `sensor.p2000_last_feed_alert` en `sensor.p2000_last_filtered_alert` toegevoegd.
+- Nieuw event: `p2000_filtered_alert`.
+- Oude event `p2000_new_alert` blijft werken voor backwards compatibility.
+
+## v0.1.4
+
+- Fix voor `CONF_SCAN_INTERVAL is not defined`.
+- Diensten genormaliseerd naar vaste interne waarden: `ambulance`, `fire`, `police`, `mmt`, `lifeboat`.
 
 ## v0.1.3
 
-- Fixed coordinator feed URL handling when changed from Options.
-- Added `alerts_in_feed` attribute to sensors for easier testing.
-- Cleaned release package by removing `__pycache__`.
-- Improved README with HACS installation steps.
-
-## v0.1.2
-
-- Fixed OptionsFlow crash caused by assigning to read-only `config_entry`.
-
-## v0.1.1
-
-- Config-flow fixes.
-
-## v0.1.0
-
-- Initial UI-based integration version.
+- Config-flow/options bugfixes.
+- Feed URL aanpassen via opties.
+- `alerts_in_feed` attribuut toegevoegd.

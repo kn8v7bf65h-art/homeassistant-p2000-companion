@@ -10,6 +10,7 @@ import feedparser
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.storage import Store
 
 from .const import (
     CONF_CITIES,
@@ -28,14 +29,26 @@ from .parser import Alert, parse_entry
 
 _LOGGER = logging.getLogger(__name__)
 
+STORAGE_VERSION = 1
+MAX_SEEN_IDS = 1000
+KEEP_SEEN_IDS = 500
+
 
 class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
-    """Fetch RSS feed and fire events for new alerts."""
+    """Fetch RSS feed and fire events for every new alert."""
 
     def __init__(self, hass: HomeAssistant, entry) -> None:
         self.entry = entry
         self._seen_ids: set[str] = set()
+        self._store: Store[dict[str, Any]] = Store(
+            hass,
+            STORAGE_VERSION,
+            f"{DOMAIN}_{entry.entry_id}_seen_alerts",
+        )
+        self._cache_loaded = False
         self.last_update_success_count = 0
+        self.last_new_alerts_count = 0
+        self.last_filtered_alerts_count = 0
         self.last_alert: Alert | None = None
         self.last_filtered_alert: Alert | None = None
         interval = int(entry.options.get(CONF_SCAN_INTERVAL, entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)))
@@ -47,12 +60,31 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
             update_interval=timedelta(seconds=interval),
         )
 
+    async def async_load_cache(self) -> None:
+        """Load persistent seen-alert cache before the first feed refresh."""
+        stored = await self._store.async_load()
+        if stored:
+            self._seen_ids = set(stored.get("seen_ids", []))
+        self._cache_loaded = True
+        _LOGGER.debug("Loaded %s seen P2000 alert ids", len(self._seen_ids))
+
+    async def _async_save_cache(self) -> None:
+        """Persist seen-alert cache to Home Assistant storage."""
+        if len(self._seen_ids) > MAX_SEEN_IDS:
+            # Sets are unordered, but keeping a bounded sample is enough to prevent
+            # recent duplicate events while avoiding unbounded storage growth.
+            self._seen_ids = set(list(self._seen_ids)[-KEEP_SEEN_IDS:])
+        await self._store.async_save({"seen_ids": list(self._seen_ids)})
+
     @property
     def feed_url(self) -> str:
         """Return the currently configured feed URL, including option changes."""
         return str(self.entry.options.get(CONF_FEED_URL, self.entry.data.get(CONF_FEED_URL, "")))
 
     async def _async_update_data(self) -> list[Alert]:
+        if not self._cache_loaded:
+            await self.async_load_cache()
+
         session = async_get_clientsession(self.hass)
         try:
             async with session.get(self.feed_url, timeout=20) as response:
@@ -65,18 +97,33 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
         alerts = [parse_entry(entry) for entry in parsed.entries]
 
         self.last_update_success_count = len(alerts)
+        self.last_new_alerts_count = 0
+        self.last_filtered_alerts_count = 0
 
         if not alerts:
             return []
 
-        # On first run: remember existing feed items, but do not fire events for old items.
+        # Keep dashboard sensors useful immediately, even when there are no new events.
+        self.last_alert = alerts[0]
+        first_filtered = next((a for a in alerts if self._matches_filters(a)), None)
+        if first_filtered:
+            self.last_filtered_alert = first_filtered
+
+        # First install with an empty cache: mark current feed as known so old feed
+        # items do not trigger a burst of automations. Existing persistent cache does
+        # allow missed new items since the last HA run to be processed.
         if not self._seen_ids:
             self._seen_ids = {alert.id for alert in alerts}
-            self.last_alert = alerts[0]
-            self.last_filtered_alert = next((a for a in alerts if self._matches_filters(a)), None)
+            await self._async_save_cache()
             return alerts
 
+        # Process every new RSS item, oldest first, so automations fire in real order.
         new_alerts = [alert for alert in reversed(alerts) if alert.id not in self._seen_ids]
+        self.last_new_alerts_count = len(new_alerts)
+
+        if not new_alerts:
+            return alerts
+
         for alert in new_alerts:
             self._seen_ids.add(alert.id)
             self.last_alert = alert
@@ -84,16 +131,13 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
 
             if self._matches_filters(alert):
                 self.last_filtered_alert = alert
+                self.last_filtered_alerts_count += 1
                 event_data = alert.as_event_data()
                 self.hass.bus.async_fire(EVENT_FILTERED_ALERT, event_data)
                 # Backwards compatibility for automations created before v0.1.5.
                 self.hass.bus.async_fire(EVENT_LEGACY_FILTERED_ALERT, event_data)
 
-        # Keep seen cache bounded.
-        if len(self._seen_ids) > 500:
-            current_ids = {alert.id for alert in alerts}
-            self._seen_ids = current_ids | set(list(self._seen_ids)[-250:])
-
+        await self._async_save_cache()
         return alerts
 
     def _matches_filters(self, alert: Alert) -> bool:
