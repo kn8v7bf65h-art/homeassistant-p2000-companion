@@ -32,11 +32,11 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
 
     def __init__(self, hass: HomeAssistant, entry) -> None:
         self.entry = entry
-        self.feed_url = entry.data[CONF_FEED_URL]
         self._seen_ids: set[str] = set()
+        self.last_update_success_count = 0
         self.last_alert: Alert | None = None
         self.last_filtered_alert: Alert | None = None
-        interval = int(entry.options.get("scan_interval", entry.data.get("scan_interval", DEFAULT_SCAN_INTERVAL)))
+        interval = int(entry.options.get(CONF_SCAN_INTERVAL, entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)))
 
         super().__init__(
             hass,
@@ -44,6 +44,11 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
             name=f"{DOMAIN}_{entry.entry_id}",
             update_interval=timedelta(seconds=interval),
         )
+
+    @property
+    def feed_url(self) -> str:
+        """Return the currently configured feed URL, including option changes."""
+        return str(self.entry.options.get(CONF_FEED_URL, self.entry.data.get(CONF_FEED_URL, "")))
 
     async def _async_update_data(self) -> list[Alert]:
         session = async_get_clientsession(self.hass)
@@ -56,6 +61,8 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
 
         parsed = await self.hass.async_add_executor_job(feedparser.parse, text)
         alerts = [parse_entry(entry) for entry in parsed.entries]
+
+        self.last_update_success_count = len(alerts)
 
         if not alerts:
             return []
@@ -80,7 +87,7 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
         # Keep seen cache bounded.
         if len(self._seen_ids) > 500:
             current_ids = {alert.id for alert in alerts}
-            self._seen_ids = set(list(self._seen_ids)[-250:]) | current_ids
+            self._seen_ids = current_ids | set(list(self._seen_ids)[-250:])
 
         return alerts
 

@@ -44,10 +44,14 @@ class P2000LastAlertSensor(CoordinatorEntity[P2000Coordinator], SensorEntity):
     @property
     def extra_state_attributes(self):
         alert = self.coordinator.last_filtered_alert if self.filtered else self.coordinator.last_alert
-        if not alert:
-            return {"feed_url": self.coordinator.feed_url}
-        return {
+        base = {
             "feed_url": self.coordinator.feed_url,
+            "alerts_in_feed": self.coordinator.last_update_success_count,
+        }
+        if not alert:
+            return base
+        return {
+            **base,
             "id": alert.id,
             "message": alert.message,
             "summary": alert.summary,
