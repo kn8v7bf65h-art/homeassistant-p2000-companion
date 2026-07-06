@@ -16,6 +16,7 @@ from .const import (
     CONF_EXCLUDE_WORDS,
     CONF_FEED_URL,
     CONF_PRIORITIES,
+    CONF_SCAN_INTERVAL,
     CONF_SERVICES,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -100,7 +101,7 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
         priority = (alert.priority or "").upper()
 
         cities = [c.lower() for c in options.get(CONF_CITIES, []) if c]
-        services = [s.lower() for s in options.get(CONF_SERVICES, []) if s]
+        services = [str(s).lower().strip() for s in options.get(CONF_SERVICES, []) if s]
         priorities = [p.upper().replace(" ", "") for p in options.get(CONF_PRIORITIES, []) if p]
         exclude_words = [w.lower() for w in options.get(CONF_EXCLUDE_WORDS, []) if w]
 

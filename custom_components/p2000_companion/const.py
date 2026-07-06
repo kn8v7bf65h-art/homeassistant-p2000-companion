@@ -18,5 +18,5 @@ EVENT_FILTERED_ALERT = "p2000_new_alert"
 
 PLATFORMS = ["sensor"]
 
-SERVICE_OPTIONS = ["ambulance", "brandweer", "politie", "traumaheli"]
-PRIORITY_OPTIONS = ["P1", "P2", "P3", "A1", "A2", "B1"]
+SERVICE_OPTIONS = ["ambulance", "fire", "police", "mmt", "lifeboat"]
+PRIORITY_OPTIONS = ["P1", "P2", "P3"]

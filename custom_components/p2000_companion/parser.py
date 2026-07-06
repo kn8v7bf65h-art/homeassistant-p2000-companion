@@ -34,9 +34,10 @@ PRIORITY_PATTERNS = [
 
 SERVICE_PATTERNS = [
     (r"\b(ambulance|ambu|a\s*[12]\b|rapid responder|zorgambulance)\b", "ambulance"),
-    (r"\b(brandweer|brand|buitenbrand|binnenbrand|middelbrand|grote brand|oms|buitenmelding|buitensluiting|bdh-|ts\b)\b", "brandweer"),
-    (r"\b(politie|prio\s*[123]|ongeval wegvervoer|aanrijding|overval|inbraak)\b", "politie"),
-    (r"\b(lifeliner|lfl\d|mmt|traumaheli)\b", "traumaheli"),
+    (r"\b(brandweer|brand|buitenbrand|binnenbrand|middelbrand|grote brand|oms|buitenmelding|buitensluiting|bdh-|ts\b)\b", "fire"),
+    (r"\b(politie|prio\s*[123]|ongeval wegvervoer|aanrijding|overval|inbraak)\b", "police"),
+    (r"\b(lifeliner|lfl\d|mmt|traumaheli)\b", "mmt"),
+    (r"\b(knrm|reddingboot|kustwacht)\b", "lifeboat"),
 ]
 
 
@@ -74,6 +75,26 @@ def parse_priority(text: str) -> str | None:
         if re.search(pattern, upper, flags=re.IGNORECASE):
             return priority
     return None
+
+
+def normalize_service(value: Any) -> str:
+    """Normalize service names to stable internal English identifiers."""
+    raw = normalize_text(value).lower().strip()
+    aliases = {
+        "ambulance": "ambulance",
+        "ambu": "ambulance",
+        "brandweer": "fire",
+        "brand": "fire",
+        "fire": "fire",
+        "politie": "police",
+        "police": "police",
+        "traumaheli": "mmt",
+        "lifeliner": "mmt",
+        "mmt": "mmt",
+        "knrm": "lifeboat",
+        "lifeboat": "lifeboat",
+    }
+    return aliases.get(raw, raw)
 
 
 def parse_service(text: str) -> str | None:

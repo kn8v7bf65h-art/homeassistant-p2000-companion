@@ -78,3 +78,18 @@ mode: single
 - Config-flow is enabled.
 - Options-flow can update feed URL, places, services, priorities, exclude words and scan interval.
 - The feed URL used by the coordinator now follows options changes after reload.
+
+
+## v0.1.4
+
+Bugfix: `CONF_SCAN_INTERVAL` import toegevoegd zodat setup niet meer crasht.
+
+Diensten worden nu intern genormaliseerd naar vaste Engelse waarden:
+
+- `ambulance`
+- `fire`
+- `police`
+- `mmt`
+- `lifeboat`
+
+Nederlandse invoer zoals `brandweer`, `politie` en `traumaheli` wordt automatisch omgezet.

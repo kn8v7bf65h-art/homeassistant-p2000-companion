@@ -21,7 +21,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
-from .parser import csv_to_list
+from .parser import csv_to_list, normalize_service
 
 
 def _as_csv(value: Any) -> str:
@@ -71,7 +71,7 @@ def _normalize_input(user_input: dict[str, Any]) -> dict[str, Any]:
     data = dict(user_input)
     data[CONF_FEED_URL] = str(data.get(CONF_FEED_URL, DEFAULT_FEED_URL)).strip()
     data[CONF_CITIES] = csv_to_list(data.get(CONF_CITIES))
-    data[CONF_SERVICES] = [s.lower() for s in csv_to_list(data.get(CONF_SERVICES))]
+    data[CONF_SERVICES] = [normalize_service(s) for s in csv_to_list(data.get(CONF_SERVICES))]
     data[CONF_PRIORITIES] = [p.upper().replace(" ", "") for p in csv_to_list(data.get(CONF_PRIORITIES))]
     data[CONF_EXCLUDE_WORDS] = [w.lower() for w in csv_to_list(data.get(CONF_EXCLUDE_WORDS))]
     data[CONF_SCAN_INTERVAL] = int(data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
