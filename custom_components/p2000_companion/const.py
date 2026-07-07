@@ -11,6 +11,7 @@ CONF_CITIES = "cities"
 CONF_SERVICES = "services"
 CONF_PRIORITIES = "priorities"
 CONF_EXCLUDE_WORDS = "exclude_words"
+CONF_TEXT_CONTAINS = "text_contains"
 CONF_SCAN_INTERVAL = "scan_interval"
 
 EVENT_FEED_ALERT = "p2000_feed_alert"

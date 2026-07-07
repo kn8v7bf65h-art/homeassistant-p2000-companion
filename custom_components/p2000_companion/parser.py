@@ -57,6 +57,7 @@ class Alert:
     service: str | None
     priority: str | None
     raw_text: str
+    source_feed_url: str | None = None
 
     def as_event_data(self) -> dict[str, Any]:
         data = asdict(self)
@@ -145,7 +146,7 @@ def make_id(title: str, link: str | None, published: str | None) -> str:
     return hashlib.md5(base.encode("utf-8"), usedforsecurity=False).hexdigest()
 
 
-def parse_entry(entry: Any) -> Alert:
+def parse_entry(entry: Any, source_feed_url: str | None = None) -> Alert:
     title = normalize_text(getattr(entry, "title", None) or entry.get("title") if hasattr(entry, "get") else "")
     summary = normalize_text(getattr(entry, "summary", None) or entry.get("summary") if hasattr(entry, "get") else "")
     link = normalize_text(getattr(entry, "link", None) or entry.get("link") if hasattr(entry, "get") else "") or None
@@ -165,6 +166,7 @@ def parse_entry(entry: Any) -> Alert:
         service=parse_service(raw_text),
         priority=parse_priority(raw_text),
         raw_text=raw_text,
+        source_feed_url=source_feed_url,
     )
 
 

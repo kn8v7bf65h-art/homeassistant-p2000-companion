@@ -46,6 +46,7 @@ class P2000LastAlertSensor(CoordinatorEntity[P2000Coordinator], SensorEntity):
         alert = self.coordinator.last_filtered_alert if self.filtered else self.coordinator.last_alert
         base = {
             "feed_url": self.coordinator.feed_url,
+            "feed_urls": self.coordinator.feed_urls,
             "alerts_in_feed": self.coordinator.last_update_success_count,
             "new_alerts_last_update": self.coordinator.last_new_alerts_count,
             "filtered_alerts_last_update": self.coordinator.last_filtered_alerts_count,
@@ -63,4 +64,5 @@ class P2000LastAlertSensor(CoordinatorEntity[P2000Coordinator], SensorEntity):
             "service": alert.service,
             "priority": alert.priority,
             "raw_text": alert.raw_text,
+            "source_feed_url": alert.source_feed_url,
         }

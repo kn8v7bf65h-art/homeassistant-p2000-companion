@@ -1,6 +1,7 @@
 """Config flow for P2000 Companion."""
 from __future__ import annotations
 
+import hashlib
 from typing import Any
 
 import voluptuous as vol
@@ -16,6 +17,7 @@ from .const import (
     CONF_PRIORITIES,
     CONF_SCAN_INTERVAL,
     CONF_SERVICES,
+    CONF_TEXT_CONTAINS,
     DEFAULT_FEED_URL,
     DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
@@ -55,6 +57,10 @@ def _schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
                 default=_as_csv(defaults.get(CONF_PRIORITIES, "")),
             ): str,
             vol.Optional(
+                CONF_TEXT_CONTAINS,
+                default=_as_csv(defaults.get(CONF_TEXT_CONTAINS, "")),
+            ): str,
+            vol.Optional(
                 CONF_EXCLUDE_WORDS,
                 default=_as_csv(defaults.get(CONF_EXCLUDE_WORDS, "")),
             ): str,
@@ -69,13 +75,20 @@ def _schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
 def _normalize_input(user_input: dict[str, Any]) -> dict[str, Any]:
     """Normalize form data before storing it."""
     data = dict(user_input)
-    data[CONF_FEED_URL] = str(data.get(CONF_FEED_URL, DEFAULT_FEED_URL)).strip()
+    # Backward-compatible name: this field may contain one URL or a comma-separated list.
+    data[CONF_FEED_URL] = ", ".join(csv_to_list(data.get(CONF_FEED_URL, DEFAULT_FEED_URL)))
     data[CONF_CITIES] = csv_to_list(data.get(CONF_CITIES))
     data[CONF_SERVICES] = [normalize_service(s) for s in csv_to_list(data.get(CONF_SERVICES))]
     data[CONF_PRIORITIES] = [p.upper().replace(" ", "") for p in csv_to_list(data.get(CONF_PRIORITIES))]
+    data[CONF_TEXT_CONTAINS] = [w.lower() for w in csv_to_list(data.get(CONF_TEXT_CONTAINS))]
     data[CONF_EXCLUDE_WORDS] = [w.lower() for w in csv_to_list(data.get(CONF_EXCLUDE_WORDS))]
     data[CONF_SCAN_INTERVAL] = int(data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
     return data
+
+
+def _valid_urls(value: str) -> bool:
+    urls = csv_to_list(value)
+    return bool(urls) and all(url.startswith(("http://", "https://")) for url in urls)
 
 
 class P2000CompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -89,10 +102,11 @@ class P2000CompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             data = _normalize_input(user_input)
-            if not data[CONF_FEED_URL].startswith(("http://", "https://")):
+            if not _valid_urls(data[CONF_FEED_URL]):
                 errors[CONF_FEED_URL] = "invalid_url"
             else:
-                await self.async_set_unique_id(data[CONF_FEED_URL])
+                uid = hashlib.md5(data[CONF_FEED_URL].encode("utf-8"), usedforsecurity=False).hexdigest()
+                await self.async_set_unique_id(uid)
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(title=DEFAULT_NAME, data=data)
 
@@ -121,7 +135,7 @@ class P2000CompanionOptionsFlow(config_entries.OptionsFlow):
 
         if user_input is not None:
             data = _normalize_input(user_input)
-            if not data[CONF_FEED_URL].startswith(("http://", "https://")):
+            if not _valid_urls(data[CONF_FEED_URL]):
                 errors[CONF_FEED_URL] = "invalid_url"
             else:
                 return self.async_create_entry(title="", data=data)

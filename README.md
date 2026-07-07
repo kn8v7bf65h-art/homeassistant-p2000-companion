@@ -1,59 +1,60 @@
 # P2000 Companion
 
-Custom Home Assistant integratie voor P2000/RSS-meldingen.
+Home Assistant custom integration for P2000 RSS feeds.
 
-## Features
+## v0.3.0 highlights
 
-- Leest een P2000 RSS-feed, standaard Haaglanden.
-- Configuratie via **Instellingen → Apparaten & diensten**.
-- Opties aanpassen zonder YAML.
-- Parser voor o.a. `A1`, `A2`, `B1`, `B2`, `P 1`, `P 2`, `PRIO 1`, `PRIO 2`.
-- Dienstnormalisatie:
-  - `ambulance`
-  - `fire`
-  - `police`
-  - `mmt`
-  - `lifeboat`
-- Events:
-  - `p2000_feed_alert` voor iedere nieuwe feedmelding.
-  - `p2000_filtered_alert` voor iedere nieuwe melding die aan jouw filters voldoet.
-  - `p2000_new_alert` blijft bestaan als legacy alias van `p2000_filtered_alert`.
-- Sensoren:
+- Supports multiple RSS feeds in one integration entry.
+- The `feed_url` field now accepts a comma-separated list, for example:
+  - `https://alarmeringen.nl/feeds/region/haaglanden.rss`
+  - `https://alarmeringen.nl/feeds/all.rss`
+- Adds `text_contains` filtering for cases where the location is only present in the raw text.
+- Continues to fire one event per new alert:
+  - `p2000_feed_alert` for every new alert
+  - `p2000_filtered_alert` for alerts matching your filters
+  - `p2000_new_alert` remains as legacy alias
+- Keeps the sensors:
   - `sensor.p2000_last_feed_alert`
   - `sensor.p2000_last_filtered_alert`
 
-## Belangrijk in v0.2.0
+## Example: Haaglanden + national MMT feed
 
-Vanaf v0.2.0 worden **alle nieuwe meldingen** verwerkt. Als er tijdens één feed-update drie nieuwe meldingen binnenkomen, worden er ook drie events afgevuurd.
+Add both feeds in the Feed URL field, comma-separated:
 
-De integratie bewaart bekende melding-ID's persistent in Home Assistant storage. Daardoor krijg je na een herstart niet opnieuw oude meldingen als event.
+```text
+https://alarmeringen.nl/feeds/region/haaglanden.rss, https://alarmeringen.nl/feeds/all.rss
+```
 
-## Voorbeeld automation
+Filter examples:
+
+```text
+Cities:
+Honselersdijk, Naaldwijk, De Lier
+
+Services:
+ambulance, fire, police, mmt
+
+Priorities:
+P1, P2, B1, B2
+
+Text contains:
+Honselersdijk, Naaldwijk, De Lier
+```
+
+Use `text_contains` when the source feed does not expose a clean city field but the place name appears in the alert text.
+
+## Events
+
+Automation trigger for filtered alerts:
 
 ```yaml
-alias: P2000 ambulance gefilterd
 triggers:
   - trigger: event
     event_type: p2000_filtered_alert
-conditions:
-  - condition: template
-    value_template: "{{ trigger.event.data.service == 'ambulance' }}"
-actions:
-  - action: notify.pushover
-    data:
-      title: "🚑 Ambulance melding"
-      message: "{{ trigger.event.data.summary }}"
-mode: single
 ```
 
-## Feed
+Use the summary:
 
-Voor Haaglanden:
-
-```text
-https://alarmeringen.nl/feeds/region/haaglanden.rss
+```jinja
+{{ trigger.event.data.summary }}
 ```
-
-## HACS
-
-Voeg deze repository toe als custom repository in HACS met categorie **Integration**.

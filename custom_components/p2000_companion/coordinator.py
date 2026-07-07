@@ -19,13 +19,14 @@ from .const import (
     CONF_PRIORITIES,
     CONF_SCAN_INTERVAL,
     CONF_SERVICES,
+    CONF_TEXT_CONTAINS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     EVENT_FEED_ALERT,
     EVENT_FILTERED_ALERT,
     EVENT_LEGACY_FILTERED_ALERT,
 )
-from .parser import Alert, parse_entry
+from .parser import Alert, csv_to_list, parse_entry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ KEEP_SEEN_IDS = 500
 
 
 class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
-    """Fetch RSS feed and fire events for every new alert."""
+    """Fetch RSS feeds and fire events for every new alert."""
 
     def __init__(self, hass: HomeAssistant, entry) -> None:
         self.entry = entry
@@ -71,30 +72,51 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
     async def _async_save_cache(self) -> None:
         """Persist seen-alert cache to Home Assistant storage."""
         if len(self._seen_ids) > MAX_SEEN_IDS:
-            # Sets are unordered, but keeping a bounded sample is enough to prevent
-            # recent duplicate events while avoiding unbounded storage growth.
             self._seen_ids = set(list(self._seen_ids)[-KEEP_SEEN_IDS:])
         await self._store.async_save({"seen_ids": list(self._seen_ids)})
 
     @property
     def feed_url(self) -> str:
-        """Return the currently configured feed URL, including option changes."""
+        """Return the configured feed URL field."""
         return str(self.entry.options.get(CONF_FEED_URL, self.entry.data.get(CONF_FEED_URL, "")))
+
+    @property
+    def feed_urls(self) -> list[str]:
+        """Return all configured feed URLs.
+
+        For backward compatibility this still uses the `feed_url` option, but it
+        now accepts a comma-separated list. This keeps existing installs working
+        while allowing combinations such as Haaglanden + Landelijk.
+        """
+        urls = csv_to_list(self.feed_url)
+        return urls or []
+
+    async def _fetch_feed(self, url: str) -> list[Alert]:
+        """Fetch and parse one RSS feed."""
+        session = async_get_clientsession(self.hass)
+        try:
+            async with session.get(url, timeout=20) as response:
+                response.raise_for_status()
+                text = await response.text()
+        except Exception as err:  # noqa: BLE001
+            raise UpdateFailed(f"Could not fetch P2000 feed {url}: {err}") from err
+
+        parsed = await self.hass.async_add_executor_job(feedparser.parse, text)
+        return [parse_entry(entry, source_feed_url=url) for entry in parsed.entries]
 
     async def _async_update_data(self) -> list[Alert]:
         if not self._cache_loaded:
             await self.async_load_cache()
 
-        session = async_get_clientsession(self.hass)
-        try:
-            async with session.get(self.feed_url, timeout=20) as response:
-                response.raise_for_status()
-                text = await response.text()
-        except Exception as err:  # noqa: BLE001
-            raise UpdateFailed(f"Could not fetch P2000 feed: {err}") from err
+        all_alerts: list[Alert] = []
+        for url in self.feed_urls:
+            all_alerts.extend(await self._fetch_feed(url))
 
-        parsed = await self.hass.async_add_executor_job(feedparser.parse, text)
-        alerts = [parse_entry(entry) for entry in parsed.entries]
+        # De-duplicate items that appear in more than one feed. Keep first hit.
+        unique_alerts: dict[str, Alert] = {}
+        for alert in all_alerts:
+            unique_alerts.setdefault(alert.id, alert)
+        alerts = list(unique_alerts.values())
 
         self.last_update_success_count = len(alerts)
         self.last_new_alerts_count = 0
@@ -103,21 +125,17 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
         if not alerts:
             return []
 
-        # Keep dashboard sensors useful immediately, even when there are no new events.
         self.last_alert = alerts[0]
         first_filtered = next((a for a in alerts if self._matches_filters(a)), None)
         if first_filtered:
             self.last_filtered_alert = first_filtered
 
-        # First install with an empty cache: mark current feed as known so old feed
-        # items do not trigger a burst of automations. Existing persistent cache does
-        # allow missed new items since the last HA run to be processed.
         if not self._seen_ids:
             self._seen_ids = {alert.id for alert in alerts}
             await self._async_save_cache()
             return alerts
 
-        # Process every new RSS item, oldest first, so automations fire in real order.
+        # Feeds are newest-first. Reverse so events fire oldest -> newest.
         new_alerts = [alert for alert in reversed(alerts) if alert.id not in self._seen_ids]
         self.last_new_alerts_count = len(new_alerts)
 
@@ -134,7 +152,6 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
                 self.last_filtered_alerts_count += 1
                 event_data = alert.as_event_data()
                 self.hass.bus.async_fire(EVENT_FILTERED_ALERT, event_data)
-                # Backwards compatibility for automations created before v0.1.5.
                 self.hass.bus.async_fire(EVENT_LEGACY_FILTERED_ALERT, event_data)
 
         await self._async_save_cache()
@@ -151,11 +168,14 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
         cities = [c.lower() for c in options.get(CONF_CITIES, []) if c]
         services = [str(s).lower().strip() for s in options.get(CONF_SERVICES, []) if s]
         priorities = [p.upper().replace(" ", "") for p in options.get(CONF_PRIORITIES, []) if p]
+        text_contains = [w.lower() for w in options.get(CONF_TEXT_CONTAINS, []) if w]
         exclude_words = [w.lower() for w in options.get(CONF_EXCLUDE_WORDS, []) if w]
 
         if exclude_words and any(word in raw_text for word in exclude_words):
             return False
         if cities and not any(c in city or c in raw_text for c in cities):
+            return False
+        if text_contains and not any(word in raw_text for word in text_contains):
             return False
         if services and service not in services:
             return False
