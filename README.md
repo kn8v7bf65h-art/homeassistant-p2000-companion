@@ -2,7 +2,7 @@
 
 Home Assistant custom integration for P2000 RSS feeds.
 
-## v0.3.0 highlights
+## v0.3.1 highlights
 
 - Supports multiple RSS feeds in one integration entry.
 - The `feed_url` field now accepts a comma-separated list, for example:
@@ -58,3 +58,11 @@ Use the summary:
 ```jinja
 {{ trigger.event.data.summary }}
 ```
+
+
+## v0.3.1
+This release fixes duplicate events when the same P2000 alert is present in both a regional feed and the national feed.
+
+
+## v0.3.2
+Deze versie voorkomt dat dezelfde melding opnieuw events afvuurt wanneer de RSS-feed de melding na enkele minuten opnieuw publiceert met gewijzigde timestamp of trackingmetadata.

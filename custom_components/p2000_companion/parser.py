@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from urllib.parse import urlsplit, urlunsplit
 from dataclasses import dataclass, asdict
 from typing import Any
 
@@ -141,8 +142,52 @@ def parse_city(text: str, link: str | None = None) -> str | None:
     return None
 
 
-def make_id(title: str, link: str | None, published: str | None) -> str:
-    base = f"{title}|{link or ''}|{published or ''}"
+def normalize_link_for_id(link: str | None) -> str:
+    """Return a stable link key for de-duplication across feeds.
+
+    Alarmeringen.nl can publish the same alert in multiple feeds with different
+    tracking query parameters, for example `utm_campaign=haaglanden` vs another
+    feed campaign. If the query string is part of the id, the same alert can
+    trigger twice. For de-duplication we keep scheme/netloc/path and drop query
+    parameters/fragments.
+    """
+    if not link:
+        return ""
+    try:
+        parts = urlsplit(link)
+        return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+    except Exception:  # noqa: BLE001
+        return link.split("?")[0].split("#")[0]
+
+
+def normalize_for_id(value: str | None) -> str:
+    """Normalize text for stable duplicate detection.
+
+    RSS feeds can republish the same alert after a few minutes with a changed
+    timestamp or minor whitespace/case differences. The event should not fire
+    again for the same operational alert, so IDs must be based on stable
+    content, not on the feed's published/updated timestamp.
+    """
+    if not value:
+        return ""
+    text = str(value).lower().strip()
+    text = re.sub(r"\s+", " ", text)
+    return text
+
+
+def make_id(title: str, link: str | None, published: str | None, summary: str | None = None) -> str:
+    """Create a stable alert id for de-duplication.
+
+    Prefer the normalized Alarmeringen detail-page path. Do not include
+    `published`, because some feeds appear to refresh/rewrite timestamps and
+    would otherwise re-trigger the same alert every few minutes. When no link
+    is available, fall back to normalized title + summary.
+    """
+    stable_link = normalize_link_for_id(link)
+    if stable_link:
+        base = normalize_for_id(stable_link)
+    else:
+        base = f"{normalize_for_id(title)}|{normalize_for_id(summary)}"
     return hashlib.md5(base.encode("utf-8"), usedforsecurity=False).hexdigest()
 
 
@@ -153,7 +198,7 @@ def parse_entry(entry: Any, source_feed_url: str | None = None) -> Alert:
     published = normalize_text(getattr(entry, "published", None) or entry.get("published") if hasattr(entry, "get") else "") or None
     raw_text = " ".join(part for part in [title, summary] if part)
 
-    alert_id = make_id(title, link, published)
+    alert_id = make_id(title, link, published, summary)
 
     return Alert(
         id=alert_id,
