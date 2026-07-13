@@ -8,7 +8,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR, DOMAIN
 from .coordinator import P2000Coordinator
 
 
@@ -18,12 +18,13 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: P2000Coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(
-        [
-            P2000LastAlertSensor(coordinator, entry, filtered=False),
-            P2000LastAlertSensor(coordinator, entry, filtered=True),
-        ]
-    )
+    options = {**entry.data, **entry.options}
+    entities: list[SensorEntity] = [
+        P2000LastAlertSensor(coordinator, entry, filtered=True),
+    ]
+    if bool(options.get(CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR)):
+        entities.insert(0, P2000LastAlertSensor(coordinator, entry, filtered=False))
+    async_add_entities(entities)
 
 
 class P2000LastAlertSensor(CoordinatorEntity[P2000Coordinator], SensorEntity):

@@ -17,6 +17,7 @@ from homeassistant.helpers.selector import (
 
 from .const import (
     CONF_CITIES,
+    CONF_CREATE_FEED_SENSOR,
     CONF_EXCLUDE_WORDS,
     CONF_FEED_URL,
     CONF_MONITOR_NAME,
@@ -24,6 +25,7 @@ from .const import (
     CONF_SCAN_INTERVAL,
     CONF_SERVICES,
     CONF_TEXT_CONTAINS,
+    DEFAULT_CREATE_FEED_SENSOR,
     DEFAULT_FEED_URL,
     DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
@@ -65,6 +67,7 @@ def _schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
             ): str,
             vol.Optional(
                 CONF_CITIES,
+    CONF_CREATE_FEED_SENSOR,
                 default=_as_csv(defaults.get(CONF_CITIES, "")),
             ): str,
             vol.Optional(
@@ -96,6 +99,10 @@ def _schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
                 default=_as_csv(defaults.get(CONF_EXCLUDE_WORDS, "")),
             ): str,
             vol.Optional(
+                CONF_CREATE_FEED_SENSOR,
+                default=bool(defaults.get(CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR)),
+            ): bool,
+            vol.Optional(
                 CONF_SCAN_INTERVAL,
                 default=int(defaults.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)),
             ): vol.All(vol.Coerce(int), vol.Range(min=30, max=3600)),
@@ -113,6 +120,7 @@ def _normalize_input(user_input: dict[str, Any]) -> dict[str, Any]:
     data[CONF_PRIORITIES] = [p.upper().replace(" ", "") for p in csv_to_list(data.get(CONF_PRIORITIES))]
     data[CONF_TEXT_CONTAINS] = [w.lower() for w in csv_to_list(data.get(CONF_TEXT_CONTAINS))]
     data[CONF_EXCLUDE_WORDS] = [w.lower() for w in csv_to_list(data.get(CONF_EXCLUDE_WORDS))]
+    data[CONF_CREATE_FEED_SENSOR] = bool(data.get(CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR))
     data[CONF_SCAN_INTERVAL] = int(data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
     return data
 
@@ -125,7 +133,7 @@ def _valid_urls(value: str) -> bool:
 class P2000CompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for a P2000 monitor profile."""
 
-    VERSION = 2
+    VERSION = 3
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Create a user-defined monitor profile."""

@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "P2000-monitor toevoegen",
-        "description": "Maak een eigen monitorprofiel. Voeg de integratie opnieuw toe voor ieder extra profiel. Meerdere plaatsen, prioriteiten en trefwoorden kun je scheiden met komma’s; diensten kies je met selectievakjes.",
+        "description": "Maak een eigen monitorprofiel. Voeg de integratie opnieuw toe voor ieder extra profiel. Meerdere plaatsen, prioriteiten en trefwoorden kun je scheiden met komma’s; diensten kies je met selectievakjes. De laatste feedmelding-sensor staat standaard uit om dubbele entiteiten te voorkomen.",
         "data": {
           "monitor_name": "Naam van monitor",
           "feed_url": "RSS-feed URL('s)",
@@ -12,7 +12,8 @@
           "priorities": "Prioriteiten",
           "text_contains": "Tekst bevat (één van)",
           "exclude_words": "Woorden uitsluiten",
-          "scan_interval": "Verversinterval in seconden"
+          "scan_interval": "Verversinterval in seconden",
+          "create_feed_sensor": "Laatste feedmelding-sensor aanmaken"
         }
       }
     },
@@ -25,7 +26,7 @@
     "step": {
       "init": {
         "title": "Monitorprofiel aanpassen",
-        "description": "Pas de naam, feeds en filters van deze monitor aan. Kies één of meer diensten met de selectievakjes.",
+        "description": "Pas de naam, feeds en filters van deze monitor aan. Kies één of meer diensten met de selectievakjes. Schakel de feedmelding-sensor alleen in als je die voor dit profiel echt nodig hebt.",
         "data": {
           "monitor_name": "Naam van monitor",
           "feed_url": "RSS-feed URL('s)",
@@ -34,7 +35,8 @@
           "priorities": "Prioriteiten",
           "text_contains": "Tekst bevat (één van)",
           "exclude_words": "Woorden uitsluiten",
-          "scan_interval": "Verversinterval in seconden"
+          "scan_interval": "Verversinterval in seconden",
+          "create_feed_sensor": "Laatste feedmelding-sensor aanmaken"
         }
       }
     }

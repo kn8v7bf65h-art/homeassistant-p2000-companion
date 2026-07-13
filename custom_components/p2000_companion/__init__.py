@@ -7,6 +7,7 @@ from pathlib import Path
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN, PLATFORMS
 from .coordinator import P2000Coordinator
@@ -52,26 +53,29 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate older P2000 Companion config entries."""
-    if entry.version > 2:
+    if entry.version > 3:
         return False
 
-    if entry.version == 1:
-        from .const import (
-            CONF_CITIES,
-            CONF_EXCLUDE_WORDS,
-            CONF_FEED_URL,
-            CONF_MONITOR_NAME,
-            CONF_PRIORITIES,
-            CONF_SCAN_INTERVAL,
-            CONF_SERVICES,
-            CONF_TEXT_CONTAINS,
-            DEFAULT_FEED_URL,
-            DEFAULT_NAME,
-            DEFAULT_SCAN_INTERVAL,
-        )
-        from .parser import csv_to_list, normalize_service
+    from .const import (
+        CONF_CITIES,
+        CONF_CREATE_FEED_SENSOR,
+        CONF_EXCLUDE_WORDS,
+        CONF_FEED_URL,
+        CONF_MONITOR_NAME,
+        CONF_PRIORITIES,
+        CONF_SCAN_INTERVAL,
+        CONF_SERVICES,
+        CONF_TEXT_CONTAINS,
+        DEFAULT_CREATE_FEED_SENSOR,
+        DEFAULT_FEED_URL,
+        DEFAULT_NAME,
+        DEFAULT_SCAN_INTERVAL,
+    )
+    from .parser import csv_to_list, normalize_service
 
-        combined = {**entry.data, **entry.options}
+    combined = {**entry.data, **entry.options}
+
+    if entry.version == 1:
         monitor_name = str(
             combined.get(CONF_MONITOR_NAME) or entry.title or DEFAULT_NAME
         ).strip()
@@ -103,22 +107,58 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             CONF_SCAN_INTERVAL: int(
                 combined.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
             ),
+            CONF_CREATE_FEED_SENSOR: bool(
+                combined.get(CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR)
+            ),
         }
-
         hass.config_entries.async_update_entry(
             entry,
             title=monitor_name,
             data=migrated_data,
             options={},
-            version=2,
+            version=3,
+        )
+        return True
+
+    # v2 monitor entries gain the opt-in feed sensor setting. Keep it disabled
+    # by default to avoid duplicate feed entities when monitors share a feed.
+    if entry.version == 2:
+        data = dict(entry.data)
+        options = dict(entry.options)
+        target = options if options else data
+        target.setdefault(CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR)
+        hass.config_entries.async_update_entry(
+            entry,
+            data=data,
+            options=options,
+            version=3,
         )
 
     return True
 
 
+async def _async_remove_unused_feed_sensor(
+    hass: HomeAssistant, entry: ConfigEntry
+) -> None:
+    """Remove the optional feed sensor when it is disabled in monitor options."""
+    from .const import CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR
+
+    options = {**entry.data, **entry.options}
+    if bool(options.get(CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR)):
+        return
+
+    registry = er.async_get(hass)
+    entity_id = registry.async_get_entity_id(
+        "sensor", DOMAIN, f"{entry.entry_id}_feed"
+    )
+    if entity_id is not None:
+        registry.async_remove(entity_id)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up P2000 Companion from a config entry."""
     await _async_register_frontend(hass)
+    await _async_remove_unused_feed_sensor(hass, entry)
 
     coordinator = P2000Coordinator(hass, entry)
     await coordinator.async_load_cache()

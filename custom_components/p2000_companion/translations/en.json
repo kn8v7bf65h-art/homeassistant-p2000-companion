@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Add P2000 monitor",
-        "description": "Create a monitor profile. Add the integration again for each additional profile. Separate cities, priorities and keywords with commas; choose services using checkboxes.",
+        "description": "Create a monitor profile. Add the integration again for each additional profile. Separate cities, priorities and keywords with commas; choose services using checkboxes. The last feed alert sensor is disabled by default to avoid duplicate entities.",
         "data": {
           "monitor_name": "Monitor name",
           "feed_url": "RSS feed URL(s)",
@@ -12,7 +12,8 @@
           "priorities": "Priorities",
           "text_contains": "Text contains (any)",
           "exclude_words": "Exclude words",
-          "scan_interval": "Scan interval in seconds"
+          "scan_interval": "Scan interval in seconds",
+          "create_feed_sensor": "Create last feed alert sensor"
         }
       }
     },
@@ -25,7 +26,7 @@
     "step": {
       "init": {
         "title": "Edit monitor profile",
-        "description": "Edit this monitor profile. Choose one or more services using the checkboxes.",
+        "description": "Edit this monitor profile. Choose one or more services using the checkboxes. Enable the feed sensor only when you need it for this profile.",
         "data": {
           "monitor_name": "Monitor name",
           "feed_url": "RSS feed URL(s)",
@@ -34,7 +35,8 @@
           "priorities": "Priorities",
           "text_contains": "Text contains (any)",
           "exclude_words": "Exclude words",
-          "scan_interval": "Scan interval in seconds"
+          "scan_interval": "Scan interval in seconds",
+          "create_feed_sensor": "Create last feed alert sensor"
         }
       }
     }

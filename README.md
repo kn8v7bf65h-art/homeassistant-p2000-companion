@@ -2,6 +2,11 @@
 
 Home Assistant-integratie voor Nederlandse P2000-meldingen via RSS-feeds, met zelf te beheren monitorprofielen, events, sensoren en twee meegeleverde dashboardkaarten.
 
+## Nieuw in 2.0.0: minder systeemvervuiling
+
+Per monitor wordt standaard alleen de sensor **Laatste gefilterde melding** aangemaakt. De vaak identieke sensor **Laatste feedmelding** is optioneel en kan per monitor worden ingeschakeld via **Instellingen → Apparaten & diensten → P2000 Companion → Configureren**.
+
+
 ## Functies
 
 - Meerdere RSS-feeds per monitorprofiel
@@ -112,4 +117,4 @@ MIT
 
 ## Dienstfilters
 
-Vanaf versie 1.3.1 worden diensten gekozen met selectievakjes in de configuratie en opties van ieder monitorprofiel. De getoonde namen zijn Nederlands; intern gebruikt de integratie de stabiele waarden `ambulance`, `fire`, `police`, `mmt` en `lifeboat`.
+Vanaf versie 2.0.0 worden diensten gekozen met selectievakjes in de configuratie en opties van ieder monitorprofiel. De getoonde namen zijn Nederlands; intern gebruikt de integratie de stabiele waarden `ambulance`, `fire`, `police`, `mmt` en `lifeboat`.

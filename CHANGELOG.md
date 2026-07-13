@@ -1,39 +1,22 @@
 # Changelog
 
-## 1.3.1
+## 2.0.0
 
-- Replaced the free-text service filter with a multi-select checkbox list.
-- Added Dutch labels for Ambulance, Brandweer, Politie, MMT/Lifeliner and KNRM.
-- Existing service filters are preserved and displayed as selected options.
-- Internal service values remain stable: `ambulance`, `fire`, `police`, `mmt`, `lifeboat`.
+### Minder dubbele entiteiten
 
-## 1.3.0
+- De sensor **Laatste feedmelding** is nu optioneel en staat standaard uit.
+- Iedere monitor behoudt standaard alleen **Laatste gefilterde melding**.
+- Bestaande feed-sensoren worden bij migratie door de integratie uitgeschakeld, tenzij de optie expliciet wordt ingeschakeld.
+- Nieuwe optie in de monitorconfiguratie: **Laatste feedmelding-sensor aanmaken**.
+- Bestaande monitoren, events en automatiseringen blijven behouden.
+- Config-entry migratie bijgewerkt naar versie 3.
 
-### Toegevoegd
+### Bestaande functies
 
-- Werkende ingebouwde **P2000 Incident Card**.
-- Nieuwe **P2000 Monitorenkaart** voor meerdere monitorprofielen.
-- Visuele editors voor beide dashboardkaarten.
-- Automatische frontendregistratie vanuit de integratie.
-- Handmatige dashboard-resource als betrouwbare fallback.
-- Instellingen voor compacte weergave, statistieken, ruwe tekst en meldingslink.
-- Dynamische diensticonen en dienstkleuren.
-- Shadow DOM-isolatie zodat kaartopmaak niet lekt naar andere dashboardonderdelen.
-
-### Verbeterd
-
-- Kaartselectie vindt automatisch sensoren van P2000-monitorprofielen.
-- Mobiele en donkere weergave verbeterd.
-- Dubbele frontendregistratie wordt voorkomen.
-
-## 1.2.1
-
-- Migratiehandler toegevoegd voor bestaande v1.0/v1.1-configuraties.
-
-## 1.1.0
-
-- Zelf door gebruikers aan te maken monitor-/filterprofielen.
-
-## 1.0.0
-
-- Eerste stabiele publieke release.
+- Zelf aan te maken monitorprofielen.
+- Meerdere RSS-feeds per monitor.
+- Dienst-, plaats-, prioriteit- en tekstfilters.
+- Eén event per nieuwe melding.
+- Profielspecifieke events.
+- Persistente deduplicatie.
+- P2000 Incident Card en Monitorenkaart.
