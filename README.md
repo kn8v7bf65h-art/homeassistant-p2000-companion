@@ -103,3 +103,44 @@ Landelijk:
 ```text
 https://alarmeringen.nl/feeds/all.rss
 ```
+
+## Lovelace Incident Card
+
+Version 1.2.0 includes a bundled dashboard card for displaying the last feed or filtered alert of any monitor profile.
+
+### Add the JavaScript resource once
+
+Go to:
+
+**Settings → Dashboards → Resources → Add resource**
+
+Use:
+
+```text
+/p2000_companion/p2000-companion-card.js
+```
+
+Resource type:
+
+```text
+JavaScript Module
+```
+
+Restart Home Assistant and refresh the browser. The card then appears in the dashboard card picker as **P2000 Companion Incident Card**.
+
+### Example YAML
+
+```yaml
+type: custom:p2000-companion-card
+entity: sensor.mmt_honselersdijk_laatste_gefilterde_melding
+title: MMT Honselersdijk
+compact: false
+show_link: true
+show_raw: false
+```
+
+The visual card editor lets you choose the entity and presentation options without editing YAML.
+
+## Upgrading from 1.0 or 1.1
+
+Version 1.2.1 automatically migrates existing configuration entries to the monitor-profile format. Your feed URLs and filters are retained; removing and re-adding the integration is not required.

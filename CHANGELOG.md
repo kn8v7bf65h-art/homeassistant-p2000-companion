@@ -1,19 +1,29 @@
 # Changelog
 
-## v1.1.0 — Zelf te beheren monitorprofielen
+## 1.2.1
 
-- Gebruikers kunnen onbeperkt eigen monitor-/filterprofielen aanmaken door P2000 Companion meerdere keren toe te voegen.
-- Elk profiel heeft een eigen naam, RSS-feed(s), plaatsen, diensten, prioriteiten, tekstfilter en uitsluitwoorden.
-- Elk profiel verschijnt als een eigen Home Assistant-apparaat met twee sensoren:
-  - `Laatste feedmelding`
-  - `Laatste gefilterde melding`
-- Iedere passende melding vuurt naast de algemene events een profielspecifiek event af:
-  - `p2000_monitor_<profielnaam>`
-- Algemene events bevatten nu ook `monitor_name`, `monitor_id` en `monitor_event`.
-- Profielen kunnen via **Apparaten & diensten → Configureren** worden hernoemd en aangepast.
-- Meerdere profielen mogen bewust dezelfde RSS-feed gebruiken.
-- Bestaande v1.0-configuraties blijven werken; ontbrekende profielnamen vallen terug op de bestaande configuratietitel.
+### Fixed
+- Added automatic config-entry migration from legacy version 1 entries to the version 2 monitor-profile format.
+- Existing feed URLs, cities, services, priorities, text filters, exclusions and scan interval are preserved during migration.
+- Prevents the Home Assistant error `Migration handler not found for entry P2000 Companion`.
 
-## v1.0.0 — Eerste stabiele release
+## 1.2.0
 
-- Meerdere RSS-feeds, events per nieuwe melding, filters, sensoren, persistente deduplicatie, HACS, branding en GitHub-validatie.
+### Lovelace dashboard card
+
+- Added the bundled **P2000 Companion Incident Card**.
+- Dynamic service icon and incident styling for ambulance, fire, police, MMT and KNRM.
+- Displays summary, city, priority, publication time and monitor statistics.
+- Optional compact layout, incident link and raw P2000 text.
+- Includes a visual Lovelace card editor.
+- Card is served locally by the integration at `/p2000_companion/p2000-companion-card.js`.
+
+## 1.1.0
+
+- User-created monitor/filter profiles.
+- Each profile has its own feeds, filters, sensors and monitor-specific event.
+- Existing general feed and filtered events remain available.
+
+## 1.0.0
+
+- First stable public release.
