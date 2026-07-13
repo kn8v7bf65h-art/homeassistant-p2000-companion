@@ -1,68 +1,112 @@
-# P2000 Companion
+# 🚨 P2000 Companion
 
-Home Assistant custom integration for P2000 RSS feeds.
+Een Home Assistant-integratie voor Nederlandse P2000-meldingen via RSS-feeds.
 
-## v0.3.1 highlights
+## Mogelijkheden
 
-- Supports multiple RSS feeds in one integration entry.
-- The `feed_url` field now accepts a comma-separated list, for example:
-  - `https://alarmeringen.nl/feeds/region/haaglanden.rss`
-  - `https://alarmeringen.nl/feeds/all.rss`
-- Adds `text_contains` filtering for cases where the location is only present in the raw text.
-- Continues to fire one event per new alert:
-  - `p2000_feed_alert` for every new alert
-  - `p2000_filtered_alert` for alerts matching your filters
-  - `p2000_new_alert` remains as legacy alias
-- Keeps the sensors:
-  - `sensor.p2000_last_feed_alert`
-  - `sensor.p2000_last_filtered_alert`
+- Meerdere RSS-feeds tegelijk uitlezen.
+- Eén event per nieuwe melding, ook wanneer meerdere meldingen in één feed-update verschijnen.
+- Filteren op plaats, dienst, prioriteit en vrije tekst.
+- Persistente deduplicatie van opnieuw gepubliceerde meldingen.
+- Configureren via **Instellingen → Apparaten & diensten**.
+- Installeren en bijwerken via HACS.
 
-## Example: Haaglanden + national MMT feed
+Ondersteunde genormaliseerde diensten:
 
-Add both feeds in the Feed URL field, comma-separated:
+- `ambulance`
+- `fire`
+- `police`
+- `mmt`
+- `lifeboat`
+
+Ondersteunde prioriteitsnotaties omvatten onder meer `A1`, `A2`, `P1`, `P 1`, `PRIO 1`, `P2`, `P 2`, `PRIO 2`, `B1` en `B2`.
+
+## Installeren via HACS
+
+1. Open **HACS → Integraties**.
+2. Open rechtsboven het menu en kies **Aangepaste repositories**.
+3. Voeg toe:
+
+   ```text
+   https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion
+   ```
+
+4. Kies categorie **Integration**.
+5. Installeer **P2000 Companion**.
+6. Herstart Home Assistant.
+7. Voeg de integratie toe via **Instellingen → Apparaten & diensten → Integratie toevoegen**.
+
+## Voorbeeldfeeds
+
+Haaglanden:
+
+```text
+https://alarmeringen.nl/feeds/region/haaglanden.rss
+```
+
+Landelijk:
+
+```text
+https://alarmeringen.nl/feeds/all.rss
+```
+
+Meerdere feeds kunnen kommagescheiden worden ingevoerd:
 
 ```text
 https://alarmeringen.nl/feeds/region/haaglanden.rss, https://alarmeringen.nl/feeds/all.rss
 ```
 
-Filter examples:
-
-```text
-Cities:
-Honselersdijk, Naaldwijk, De Lier
-
-Services:
-ambulance, fire, police, mmt
-
-Priorities:
-P1, P2, B1, B2
-
-Text contains:
-Honselersdijk, Naaldwijk, De Lier
-```
-
-Use `text_contains` when the source feed does not expose a clean city field but the place name appears in the alert text.
-
 ## Events
 
-Automation trigger for filtered alerts:
+Voor iedere nieuwe melding uit de feed:
+
+```text
+p2000_feed_alert
+```
+
+Voor iedere melding die aan de ingestelde filters voldoet:
+
+```text
+p2000_filtered_alert
+```
+
+Het oudere event `p2000_new_alert` blijft als compatibiliteitsalias beschikbaar.
+
+### Voorbeeldautomatisering
 
 ```yaml
+alias: Ambulance P2000-melding
 triggers:
   - trigger: event
     event_type: p2000_filtered_alert
+conditions:
+  - condition: template
+    value_template: "{{ trigger.event.data.service == 'ambulance' }}"
+actions:
+  - action: notify.pushover
+    data:
+      title: "🚑 Ambulance melding"
+      message: "{{ trigger.event.data.summary }}"
+mode: queued
+max: 10
 ```
 
-Use the summary:
+`mode: queued` voorkomt dat gelijktijdig binnenkomende meldingen worden overgeslagen.
 
-```jinja
-{{ trigger.event.data.summary }}
+## Sensoren
+
+De integratie maakt onder meer deze sensoren aan:
+
+```text
+sensor.p2000_last_feed_alert
+sensor.p2000_last_filtered_alert
 ```
 
+## Ontwikkeling en validatie
 
-## v0.3.1
-This release fixes duplicate events when the same P2000 alert is present in both a regional feed and the national feed.
+Bij iedere push of pull request draaien automatisch:
 
+- HACS-validatie
+- Home Assistant Hassfest-validatie
 
-## v0.3.2
-Deze versie voorkomt dat dezelfde melding opnieuw events afvuurt wanneer de RSS-feed de melding na enkele minuten opnieuw publiceert met gewijzigde timestamp of trackingmetadata.
+Zie [CHANGELOG.md](CHANGELOG.md) voor release-informatie en [CONTRIBUTING.md](CONTRIBUTING.md) voor bijdragen.
