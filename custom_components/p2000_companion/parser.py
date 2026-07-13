@@ -221,3 +221,10 @@ def csv_to_list(value: Any) -> list[str]:
     if isinstance(value, list):
         return [str(item).strip() for item in value if str(item).strip()]
     return [part.strip() for part in str(value).split(",") if part.strip()]
+
+
+def slugify_event_name(value: str) -> str:
+    """Convert a monitor name to a safe Home Assistant event suffix."""
+    text = normalize_for_id(value)
+    text = re.sub(r"[^a-z0-9]+", "_", text).strip("_")
+    return text[:64] or "monitor"

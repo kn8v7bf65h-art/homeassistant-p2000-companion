@@ -1,35 +1,19 @@
 # Changelog
 
+## v1.1.0 — Zelf te beheren monitorprofielen
+
+- Gebruikers kunnen onbeperkt eigen monitor-/filterprofielen aanmaken door P2000 Companion meerdere keren toe te voegen.
+- Elk profiel heeft een eigen naam, RSS-feed(s), plaatsen, diensten, prioriteiten, tekstfilter en uitsluitwoorden.
+- Elk profiel verschijnt als een eigen Home Assistant-apparaat met twee sensoren:
+  - `Laatste feedmelding`
+  - `Laatste gefilterde melding`
+- Iedere passende melding vuurt naast de algemene events een profielspecifiek event af:
+  - `p2000_monitor_<profielnaam>`
+- Algemene events bevatten nu ook `monitor_name`, `monitor_id` en `monitor_event`.
+- Profielen kunnen via **Apparaten & diensten → Configureren** worden hernoemd en aangepast.
+- Meerdere profielen mogen bewust dezelfde RSS-feed gebruiken.
+- Bestaande v1.0-configuraties blijven werken; ontbrekende profielnamen vallen terug op de bestaande configuratietitel.
+
 ## v1.0.0 — Eerste stabiele release
 
-P2000 Companion is nu klaar als eerste stabiele publieke release voor Home Assistant en HACS.
-
-### Functionaliteit
-
-- Ondersteuning voor meerdere P2000 RSS-feeds binnen één integratie.
-- Eén `p2000_feed_alert`-event per nieuwe feedmelding.
-- Eén `p2000_filtered_alert`-event per melding die aan de ingestelde filters voldoet.
-- Legacy-event `p2000_new_alert` blijft beschikbaar voor bestaande automatiseringen.
-- Sensoren voor de laatste feedmelding en de laatste gefilterde melding.
-- Filtering op plaats, dienst, prioriteit en tekstinhoud.
-- Genormaliseerde diensten: `ambulance`, `fire`, `police`, `mmt` en `lifeboat`.
-- Genormaliseerde prioriteiten, waaronder `A1`, `A2`, `P 1`, `P 2`, `PRIO 1`, `PRIO 2`, `B1` en `B2`.
-- Persistente deduplicatie om herhaalde events na feedupdates of herstarts te voorkomen.
-- Configuratie en opties via Home Assistant **Apparaten & diensten**.
-- HACS-ondersteuning, branding en GitHub-validatie via HACS en Hassfest.
-
-## v0.3.3
-
-- Branding toegevoegd voor Home Assistant en HACS.
-- GitHub Actions toegevoegd voor HACS- en Hassfest-validatie.
-- Manifestversie gelijkgetrokken met de release.
-- CONTRIBUTING- en MIT-licentiebestanden toegevoegd.
-
-## v0.3.2
-
-- Verbeterde deduplicatie op basis van de stabiele detailpagina-link.
-- Trackingparameters en gewijzigde publicatietijden veroorzaken geen dubbele events meer.
-
-## v0.3.1
-
-- Deduplicatie verbeterd voor dezelfde melding in meerdere feeds.
+- Meerdere RSS-feeds, events per nieuwe melding, filters, sensoren, persistente deduplicatie, HACS, branding en GitHub-validatie.

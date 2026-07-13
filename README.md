@@ -2,39 +2,93 @@
 
 Een Home Assistant-integratie voor Nederlandse P2000-meldingen via RSS-feeds.
 
-## Mogelijkheden
+## Nieuw in v1.1: monitorprofielen
 
-- Meerdere RSS-feeds tegelijk uitlezen.
-- Eén event per nieuwe melding, ook wanneer meerdere meldingen in één feed-update verschijnen.
-- Filteren op plaats, dienst, prioriteit en vrije tekst.
-- Persistente deduplicatie van opnieuw gepubliceerde meldingen.
-- Configureren via **Instellingen → Apparaten & diensten**.
-- Installeren en bijwerken via HACS.
+Een **monitorprofiel** is een volledig door de gebruiker ingestelde combinatie van feeds en filters. Voeg P2000 Companion opnieuw toe voor ieder extra profiel.
 
-Ondersteunde genormaliseerde diensten:
+Voorbeelden:
 
-- `ambulance`
-- `fire`
-- `police`
-- `mmt`
-- `lifeboat`
+- **Westland Ambulance** — Haaglanden, ambulance, P1/P2, Honselersdijk/Naaldwijk/De Lier
+- **MMT Honselersdijk** — landelijke feed, dienst `mmt`, tekst bevat `Honselersdijk`
+- **Brandweer Haaglanden** — Haaglanden, dienst `fire`, P1/P2
 
-Ondersteunde prioriteitsnotaties omvatten onder meer `A1`, `A2`, `P1`, `P 1`, `PRIO 1`, `P2`, `P 2`, `PRIO 2`, `B1` en `B2`.
+Elk profiel krijgt een eigen Home Assistant-apparaat, eigen sensoren en een eigen event.
 
 ## Installeren via HACS
 
-1. Open **HACS → Integraties**.
-2. Open rechtsboven het menu en kies **Aangepaste repositories**.
-3. Voeg toe:
+1. Voeg deze repository als aangepaste HACS-integratie toe.
+2. Installeer P2000 Companion en herstart Home Assistant.
+3. Ga naar **Instellingen → Apparaten & diensten → Integratie toevoegen → P2000 Companion**.
+4. Maak je eerste monitor.
+5. Kies opnieuw **Integratie toevoegen → P2000 Companion** om extra monitoren te maken.
 
-   ```text
-   https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion
-   ```
+## Instellingen per monitor
 
-4. Kies categorie **Integration**.
-5. Installeer **P2000 Companion**.
-6. Herstart Home Assistant.
-7. Voeg de integratie toe via **Instellingen → Apparaten & diensten → Integratie toevoegen**.
+- Naam van monitor
+- Eén of meer kommagescheiden RSS-feeds
+- Plaatsen
+- Diensten: `ambulance`, `fire`, `police`, `mmt`, `lifeboat`
+- Prioriteiten: `P1`, `P2`, `P3`, `B1`, `B2`
+- Tekst bevat — een match op één van de ingevulde termen is voldoende
+- Woorden uitsluiten
+- Verversinterval
+
+## Events
+
+Voor iedere nieuwe feedmelding:
+
+```text
+p2000_feed_alert
+```
+
+Voor iedere passende melding:
+
+```text
+p2000_filtered_alert
+p2000_new_alert
+```
+
+Daarnaast krijgt iedere monitor een eigen event. Een monitor met de naam `MMT Honselersdijk` maakt:
+
+```text
+p2000_monitor_mmt_honselersdijk
+```
+
+De exacte eventnaam staat als attribuut `monitor_event` op de sensoren.
+
+### Voorbeeldautomatisering zonder extra voorwaarden
+
+```yaml
+alias: MMT Honselersdijk
+triggers:
+  - trigger: event
+    event_type: p2000_monitor_mmt_honselersdijk
+actions:
+  - action: notify.pushover
+    data:
+      title: "🚁 MMT-melding"
+      message: "{{ trigger.event.data.summary }}"
+mode: queued
+max: 10
+```
+
+`mode: queued` zorgt dat meerdere gelijktijdige meldingen na elkaar worden afgehandeld.
+
+## Sensoren
+
+Ieder profiel maakt twee sensoren onder een eigen apparaat. De entiteits-ID's worden door Home Assistant afgeleid van de profielnaam en kunnen in de UI worden aangepast.
+
+Attributen bevatten onder andere:
+
+- `monitor_name`
+- `monitor_id`
+- `monitor_event`
+- `summary`
+- `city`
+- `service`
+- `priority`
+- `source_feed_url`
+- aantallen nieuwe en gefilterde meldingen
 
 ## Voorbeeldfeeds
 
@@ -49,64 +103,3 @@ Landelijk:
 ```text
 https://alarmeringen.nl/feeds/all.rss
 ```
-
-Meerdere feeds kunnen kommagescheiden worden ingevoerd:
-
-```text
-https://alarmeringen.nl/feeds/region/haaglanden.rss, https://alarmeringen.nl/feeds/all.rss
-```
-
-## Events
-
-Voor iedere nieuwe melding uit de feed:
-
-```text
-p2000_feed_alert
-```
-
-Voor iedere melding die aan de ingestelde filters voldoet:
-
-```text
-p2000_filtered_alert
-```
-
-Het oudere event `p2000_new_alert` blijft als compatibiliteitsalias beschikbaar.
-
-### Voorbeeldautomatisering
-
-```yaml
-alias: Ambulance P2000-melding
-triggers:
-  - trigger: event
-    event_type: p2000_filtered_alert
-conditions:
-  - condition: template
-    value_template: "{{ trigger.event.data.service == 'ambulance' }}"
-actions:
-  - action: notify.pushover
-    data:
-      title: "🚑 Ambulance melding"
-      message: "{{ trigger.event.data.summary }}"
-mode: queued
-max: 10
-```
-
-`mode: queued` voorkomt dat gelijktijdig binnenkomende meldingen worden overgeslagen.
-
-## Sensoren
-
-De integratie maakt onder meer deze sensoren aan:
-
-```text
-sensor.p2000_last_feed_alert
-sensor.p2000_last_filtered_alert
-```
-
-## Ontwikkeling en validatie
-
-Bij iedere push of pull request draaien automatisch:
-
-- HACS-validatie
-- Home Assistant Hassfest-validatie
-
-Zie [CHANGELOG.md](CHANGELOG.md) voor release-informatie en [CONTRIBUTING.md](CONTRIBUTING.md) voor bijdragen.

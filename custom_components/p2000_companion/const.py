@@ -2,10 +2,11 @@
 
 DOMAIN = "p2000_companion"
 
-DEFAULT_NAME = "P2000 Companion"
+DEFAULT_NAME = "P2000 Monitor"
 DEFAULT_FEED_URL = "https://alarmeringen.nl/feeds/region/haaglanden.rss"
 DEFAULT_SCAN_INTERVAL = 60
 
+CONF_MONITOR_NAME = "monitor_name"
 CONF_FEED_URL = "feed_url"
 CONF_CITIES = "cities"
 CONF_SERVICES = "services"
@@ -17,6 +18,7 @@ CONF_SCAN_INTERVAL = "scan_interval"
 EVENT_FEED_ALERT = "p2000_feed_alert"
 EVENT_FILTERED_ALERT = "p2000_filtered_alert"
 EVENT_LEGACY_FILTERED_ALERT = "p2000_new_alert"
+EVENT_MONITOR_PREFIX = "p2000_monitor_"
 
 PLATFORMS = ["sensor"]
 

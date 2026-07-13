@@ -16,6 +16,7 @@ from .const import (
     CONF_CITIES,
     CONF_EXCLUDE_WORDS,
     CONF_FEED_URL,
+    CONF_MONITOR_NAME,
     CONF_PRIORITIES,
     CONF_SCAN_INTERVAL,
     CONF_SERVICES,
@@ -25,8 +26,9 @@ from .const import (
     EVENT_FEED_ALERT,
     EVENT_FILTERED_ALERT,
     EVENT_LEGACY_FILTERED_ALERT,
+    EVENT_MONITOR_PREFIX,
 )
-from .parser import Alert, csv_to_list, parse_entry
+from .parser import Alert, csv_to_list, parse_entry, slugify_event_name
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,6 +54,7 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
         self.last_filtered_alerts_count = 0
         self.last_alert: Alert | None = None
         self.last_filtered_alert: Alert | None = None
+        self.last_monitor_event: str | None = None
         interval = int(entry.options.get(CONF_SCAN_INTERVAL, entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)))
 
         super().__init__(
@@ -75,10 +78,42 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
             self._seen_ids = set(list(self._seen_ids)[-KEEP_SEEN_IDS:])
         await self._store.async_save({"seen_ids": list(self._seen_ids)})
 
+
+    @property
+    def monitor_name(self) -> str:
+        """Return this user-defined monitor profile name."""
+        return str(
+            self.entry.options.get(
+                CONF_MONITOR_NAME,
+                self.entry.data.get(CONF_MONITOR_NAME, self.entry.title),
+            )
+        ).strip() or self.entry.title
+
+    @property
+    def monitor_event(self) -> str:
+        """Return the monitor-specific filtered event type."""
+        return f"{EVENT_MONITOR_PREFIX}{slugify_event_name(self.monitor_name)}"
+
     @property
     def feed_url(self) -> str:
         """Return the configured feed URL field."""
         return str(self.entry.options.get(CONF_FEED_URL, self.entry.data.get(CONF_FEED_URL, "")))
+
+
+    @property
+    def monitor_name(self) -> str:
+        """Return this user-defined monitor profile name."""
+        return str(
+            self.entry.options.get(
+                CONF_MONITOR_NAME,
+                self.entry.data.get(CONF_MONITOR_NAME, self.entry.title),
+            )
+        ).strip() or self.entry.title
+
+    @property
+    def monitor_event(self) -> str:
+        """Return the monitor-specific filtered event type."""
+        return f"{EVENT_MONITOR_PREFIX}{slugify_event_name(self.monitor_name)}"
 
     @property
     def feed_urls(self) -> list[str]:
@@ -145,14 +180,27 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
         for alert in new_alerts:
             self._seen_ids.add(alert.id)
             self.last_alert = alert
-            self.hass.bus.async_fire(EVENT_FEED_ALERT, alert.as_event_data())
+            feed_event_data = alert.as_event_data()
+            feed_event_data.update({
+                "monitor_name": self.monitor_name,
+                "monitor_id": self.entry.entry_id,
+                "monitor_event": self.monitor_event,
+            })
+            self.hass.bus.async_fire(EVENT_FEED_ALERT, feed_event_data)
 
             if self._matches_filters(alert):
                 self.last_filtered_alert = alert
                 self.last_filtered_alerts_count += 1
                 event_data = alert.as_event_data()
+                event_data.update({
+                    "monitor_name": self.monitor_name,
+                    "monitor_id": self.entry.entry_id,
+                    "monitor_event": self.monitor_event,
+                })
+                self.last_monitor_event = self.monitor_event
                 self.hass.bus.async_fire(EVENT_FILTERED_ALERT, event_data)
                 self.hass.bus.async_fire(EVENT_LEGACY_FILTERED_ALERT, event_data)
+                self.hass.bus.async_fire(self.monitor_event, event_data)
 
         await self._async_save_cache()
         return alerts

@@ -1,7 +1,6 @@
-"""Config flow for P2000 Companion."""
+"""Config flow for P2000 Companion monitor profiles."""
 from __future__ import annotations
 
-import hashlib
 from typing import Any
 
 import voluptuous as vol
@@ -14,6 +13,7 @@ from .const import (
     CONF_CITIES,
     CONF_EXCLUDE_WORDS,
     CONF_FEED_URL,
+    CONF_MONITOR_NAME,
     CONF_PRIORITIES,
     CONF_SCAN_INTERVAL,
     CONF_SERVICES,
@@ -27,7 +27,7 @@ from .parser import csv_to_list, normalize_service
 
 
 def _as_csv(value: Any) -> str:
-    """Return a comma separated string for a config value."""
+    """Return a comma-separated string for a config value."""
     if value is None:
         return ""
     if isinstance(value, list):
@@ -36,10 +36,14 @@ def _as_csv(value: Any) -> str:
 
 
 def _schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
-    """Build the form schema."""
+    """Build the monitor form schema."""
     defaults = defaults or {}
     return vol.Schema(
         {
+            vol.Required(
+                CONF_MONITOR_NAME,
+                default=defaults.get(CONF_MONITOR_NAME, DEFAULT_NAME),
+            ): vol.All(str, vol.Length(min=1, max=80)),
             vol.Required(
                 CONF_FEED_URL,
                 default=defaults.get(CONF_FEED_URL, DEFAULT_FEED_URL),
@@ -75,7 +79,7 @@ def _schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
 def _normalize_input(user_input: dict[str, Any]) -> dict[str, Any]:
     """Normalize form data before storing it."""
     data = dict(user_input)
-    # Backward-compatible name: this field may contain one URL or a comma-separated list.
+    data[CONF_MONITOR_NAME] = str(data.get(CONF_MONITOR_NAME, DEFAULT_NAME)).strip()
     data[CONF_FEED_URL] = ", ".join(csv_to_list(data.get(CONF_FEED_URL, DEFAULT_FEED_URL)))
     data[CONF_CITIES] = csv_to_list(data.get(CONF_CITIES))
     data[CONF_SERVICES] = [normalize_service(s) for s in csv_to_list(data.get(CONF_SERVICES))]
@@ -92,23 +96,23 @@ def _valid_urls(value: str) -> bool:
 
 
 class P2000CompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for P2000 Companion."""
+    """Handle a config flow for a P2000 monitor profile."""
 
-    VERSION = 1
+    VERSION = 2
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle the initial step."""
+        """Create a user-defined monitor profile."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
             data = _normalize_input(user_input)
             if not _valid_urls(data[CONF_FEED_URL]):
                 errors[CONF_FEED_URL] = "invalid_url"
+            elif not data[CONF_MONITOR_NAME]:
+                errors[CONF_MONITOR_NAME] = "name_required"
             else:
-                uid = hashlib.md5(data[CONF_FEED_URL].encode("utf-8"), usedforsecurity=False).hexdigest()
-                await self.async_set_unique_id(uid)
-                self._abort_if_unique_id_configured()
-                return self.async_create_entry(title=DEFAULT_NAME, data=data)
+                # Multiple monitors may intentionally use the same feed.
+                return self.async_create_entry(title=data[CONF_MONITOR_NAME], data=data)
 
         return self.async_show_form(
             step_id="user",
@@ -124,23 +128,30 @@ class P2000CompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class P2000CompanionOptionsFlow(config_entries.OptionsFlow):
-    """Handle options for P2000 Companion."""
+    """Edit a P2000 monitor profile."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         self._config_entry = config_entry
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Manage options."""
+        """Manage monitor options."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
             data = _normalize_input(user_input)
             if not _valid_urls(data[CONF_FEED_URL]):
                 errors[CONF_FEED_URL] = "invalid_url"
+            elif not data[CONF_MONITOR_NAME]:
+                errors[CONF_MONITOR_NAME] = "name_required"
             else:
+                self.hass.config_entries.async_update_entry(
+                    self._config_entry,
+                    title=data[CONF_MONITOR_NAME],
+                )
                 return self.async_create_entry(title="", data=data)
 
         defaults = {**self._config_entry.data, **self._config_entry.options}
+        defaults.setdefault(CONF_MONITOR_NAME, self._config_entry.title or DEFAULT_NAME)
         return self.async_show_form(
             step_id="init",
             data_schema=_schema(user_input or defaults),

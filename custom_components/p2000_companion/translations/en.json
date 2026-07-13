@@ -2,29 +2,37 @@
   "config": {
     "step": {
       "user": {
-        "title": "Set up P2000 Companion",
-        "description": "Enter the RSS feed and optional filters. Separate multiple values with commas.",
+        "title": "Add P2000 monitor",
+        "description": "Create a user-defined monitor profile. Add the integration again for every additional profile. Separate multiple values and feeds with commas.",
         "data": {
-          "feed_url": "RSS feed URL",
+          "monitor_name": "Monitor name",
+          "feed_url": "RSS feed URL(s)",
           "cities": "Cities",
           "services": "Services",
           "priorities": "Priorities",
+          "text_contains": "Text contains (any)",
           "exclude_words": "Exclude words",
           "scan_interval": "Scan interval in seconds"
         }
       }
+    },
+    "error": {
+      "invalid_url": "Enter one or more valid http(s) URLs.",
+      "name_required": "Give the monitor a name."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "P2000 Companion options",
-        "description": "Change your filters. The feed always fires p2000_feed_alert for every new item.",
+        "title": "Edit monitor profile",
+        "description": "Change this monitor's name, feeds and filters. Every matching alert also fires the displayed monitor-specific event.",
         "data": {
-          "feed_url": "RSS feed URL",
+          "monitor_name": "Monitor name",
+          "feed_url": "RSS feed URL(s)",
           "cities": "Cities",
           "services": "Services",
           "priorities": "Priorities",
+          "text_contains": "Text contains (any)",
           "exclude_words": "Exclude words",
           "scan_interval": "Scan interval in seconds"
         }

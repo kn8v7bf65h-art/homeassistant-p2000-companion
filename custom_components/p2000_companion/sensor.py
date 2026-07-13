@@ -1,9 +1,10 @@
-"""Sensors for P2000 Companion."""
+"""Sensors for P2000 Companion monitor profiles."""
 from __future__ import annotations
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -17,16 +18,19 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: P2000Coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([
-        P2000LastAlertSensor(coordinator, entry, filtered=False),
-        P2000LastAlertSensor(coordinator, entry, filtered=True),
-    ])
+    async_add_entities(
+        [
+            P2000LastAlertSensor(coordinator, entry, filtered=False),
+            P2000LastAlertSensor(coordinator, entry, filtered=True),
+        ]
+    )
 
 
 class P2000LastAlertSensor(CoordinatorEntity[P2000Coordinator], SensorEntity):
-    """Last P2000 alert sensor."""
+    """Last alert sensor for one user-defined monitor."""
 
     _attr_icon = "mdi:alarm-light"
+    _attr_has_entity_name = True
 
     def __init__(self, coordinator: P2000Coordinator, entry: ConfigEntry, filtered: bool) -> None:
         super().__init__(coordinator)
@@ -34,7 +38,14 @@ class P2000LastAlertSensor(CoordinatorEntity[P2000Coordinator], SensorEntity):
         self.filtered = filtered
         suffix = "filtered" if filtered else "feed"
         self._attr_unique_id = f"{entry.entry_id}_{suffix}"
-        self._attr_name = "P2000 Last Filtered Alert" if filtered else "P2000 Last Feed Alert"
+        self._attr_name = "Laatste gefilterde melding" if filtered else "Laatste feedmelding"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=coordinator.monitor_name,
+            manufacturer="P2000 Companion",
+            model="RSS-monitorprofiel",
+            configuration_url="https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion",
+        )
 
     @property
     def native_value(self):
@@ -45,6 +56,9 @@ class P2000LastAlertSensor(CoordinatorEntity[P2000Coordinator], SensorEntity):
     def extra_state_attributes(self):
         alert = self.coordinator.last_filtered_alert if self.filtered else self.coordinator.last_alert
         base = {
+            "monitor_name": self.coordinator.monitor_name,
+            "monitor_id": self.entry.entry_id,
+            "monitor_event": self.coordinator.monitor_event,
             "feed_url": self.coordinator.feed_url,
             "feed_urls": self.coordinator.feed_urls,
             "alerts_in_feed": self.coordinator.last_update_success_count,

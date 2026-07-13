@@ -2,29 +2,37 @@
   "config": {
     "step": {
       "user": {
-        "title": "P2000 Companion instellen",
-        "description": "Vul de RSS-feed en optionele filters in. Meerdere waarden kun je scheiden met komma's.",
+        "title": "P2000-monitor toevoegen",
+        "description": "Maak een eigen monitorprofiel. Voeg de integratie opnieuw toe voor ieder extra profiel. Meerdere waarden en feeds kun je scheiden met komma's.",
         "data": {
-          "feed_url": "RSS-feed URL",
+          "monitor_name": "Naam van monitor",
+          "feed_url": "RSS-feed URL('s)",
           "cities": "Plaatsen",
           "services": "Diensten",
           "priorities": "Prioriteiten",
+          "text_contains": "Tekst bevat (één van)",
           "exclude_words": "Woorden uitsluiten",
           "scan_interval": "Verversinterval in seconden"
         }
       }
+    },
+    "error": {
+      "invalid_url": "Voer één of meer geldige http(s)-URL's in.",
+      "name_required": "Geef de monitor een naam."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "P2000 Companion opties",
-        "description": "Pas je filters aan. De feed blijft altijd alle nieuwe meldingen als p2000_feed_alert event afvuren.",
+        "title": "Monitorprofiel aanpassen",
+        "description": "Pas de naam, feeds en filters van deze monitor aan. Voor iedere passende melding wordt ook het getoonde monitor-event afgevuurd.",
         "data": {
-          "feed_url": "RSS-feed URL",
+          "monitor_name": "Naam van monitor",
+          "feed_url": "RSS-feed URL('s)",
           "cities": "Plaatsen",
           "services": "Diensten",
           "priorities": "Prioriteiten",
+          "text_contains": "Tekst bevat (één van)",
           "exclude_words": "Woorden uitsluiten",
           "scan_interval": "Verversinterval in seconden"
         }
