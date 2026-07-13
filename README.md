@@ -1,62 +1,96 @@
-# 🚨 P2000 Companion
+# P2000 Companion
 
-Een Home Assistant-integratie voor Nederlandse P2000-meldingen via RSS-feeds.
+Home Assistant-integratie voor Nederlandse P2000-meldingen via RSS-feeds, met zelf te beheren monitorprofielen, events, sensoren en twee meegeleverde dashboardkaarten.
 
-## Nieuw in v1.1: monitorprofielen
+## Functies
 
-Een **monitorprofiel** is een volledig door de gebruiker ingestelde combinatie van feeds en filters. Voeg P2000 Companion opnieuw toe voor ieder extra profiel.
+- Meerdere RSS-feeds per monitorprofiel
+- Zelf aan te maken monitor-/filterprofielen
+- Filters op plaats, dienst, prioriteit, tekst en uitsluitwoorden
+- Diensten: ambulance, brandweer, politie, MMT/Lifeliner en KNRM
+- Prioriteiten: P1, P2, P3, B1 en B2
+- Eén event per nieuwe melding
+- Persistente deduplicatie
+- Eigen events per monitorprofiel
+- Twee ingebouwde Lovelace-kaarten met visuele editor
 
-Voorbeelden:
+## Installatie via HACS
 
-- **Westland Ambulance** — Haaglanden, ambulance, P1/P2, Honselersdijk/Naaldwijk/De Lier
-- **MMT Honselersdijk** — landelijke feed, dienst `mmt`, tekst bevat `Honselersdijk`
-- **Brandweer Haaglanden** — Haaglanden, dienst `fire`, P1/P2
+1. Voeg deze repository als aangepaste HACS-repository toe met categorie **Integration**.
+2. Installeer P2000 Companion.
+3. Herstart Home Assistant.
+4. Voeg één of meerdere monitorprofielen toe via **Instellingen → Apparaten & diensten → Integratie toevoegen → P2000 Companion**.
 
-Elk profiel krijgt een eigen Home Assistant-apparaat, eigen sensoren en een eigen event.
+## Dashboardkaarten
 
-## Installeren via HACS
+Vanaf v1.3.0 registreert de integratie de kaarten automatisch. Herstart Home Assistant en ververs de browser volledig. Ga daarna naar:
 
-1. Voeg deze repository als aangepaste HACS-integratie toe.
-2. Installeer P2000 Companion en herstart Home Assistant.
-3. Ga naar **Instellingen → Apparaten & diensten → Integratie toevoegen → P2000 Companion**.
-4. Maak je eerste monitor.
-5. Kies opnieuw **Integratie toevoegen → P2000 Companion** om extra monitoren te maken.
+**Dashboard → Bewerken → Kaart toevoegen**
 
-## Instellingen per monitor
+Zoek naar:
 
-- Naam van monitor
-- Eén of meer kommagescheiden RSS-feeds
-- Plaatsen
-- Diensten: `ambulance`, `fire`, `police`, `mmt`, `lifeboat`
-- Prioriteiten: `P1`, `P2`, `P3`, `B1`, `B2`
-- Tekst bevat — een match op één van de ingevulde termen is voldoende
-- Woorden uitsluiten
-- Verversinterval
+- **P2000 Incident Card** — één uitgebreide melding
+- **P2000 Monitorenkaart** — compact overzicht van meerdere monitorprofielen
+
+### Handmatige resource fallback
+
+Verschijnen de kaarten niet in de kaartkiezer, voeg dan onder **Instellingen → Dashboards → Resources** deze JavaScript-module toe:
+
+```text
+/p2000_companion/p2000-companion-card.js
+```
+
+Type: **JavaScript-module**. Ververs daarna de browsercache.
+
+### Incident Card YAML
+
+```yaml
+type: custom:p2000-companion-card
+entity: sensor.mmt_honselersdijk_laatste_gefilterde_melding
+title: MMT Honselersdijk
+compact: false
+show_link: true
+show_raw: false
+show_statistics: true
+```
+
+### Monitorenkaart YAML
+
+```yaml
+type: custom:p2000-companion-monitors-card
+title: P2000-monitoren
+entities:
+  - sensor.westland_ambulance_laatste_gefilterde_melding
+  - sensor.brandweer_haaglanden_laatste_gefilterde_melding
+  - sensor.mmt_honselersdijk_laatste_gefilterde_melding
+show_empty: true
+```
+
+De exacte entiteitsnamen hangen af van de namen van je monitorprofielen.
 
 ## Events
 
-Voor iedere nieuwe feedmelding:
+Algemeen:
 
 ```text
 p2000_feed_alert
-```
-
-Voor iedere passende melding:
-
-```text
 p2000_filtered_alert
-p2000_new_alert
 ```
 
-Daarnaast krijgt iedere monitor een eigen event. Een monitor met de naam `MMT Honselersdijk` maakt:
+Per monitorprofiel ontstaat daarnaast een event zoals:
 
 ```text
 p2000_monitor_mmt_honselersdijk
 ```
 
-De exacte eventnaam staat als attribuut `monitor_event` op de sensoren.
+Voor meerdere snel opeenvolgende meldingen wordt in automatiseringen aanbevolen:
 
-### Voorbeeldautomatisering zonder extra voorwaarden
+```yaml
+mode: queued
+max: 10
+```
+
+## Voorbeeldautomatisering
 
 ```yaml
 alias: MMT Honselersdijk
@@ -72,75 +106,6 @@ mode: queued
 max: 10
 ```
 
-`mode: queued` zorgt dat meerdere gelijktijdige meldingen na elkaar worden afgehandeld.
+## Licentie
 
-## Sensoren
-
-Ieder profiel maakt twee sensoren onder een eigen apparaat. De entiteits-ID's worden door Home Assistant afgeleid van de profielnaam en kunnen in de UI worden aangepast.
-
-Attributen bevatten onder andere:
-
-- `monitor_name`
-- `monitor_id`
-- `monitor_event`
-- `summary`
-- `city`
-- `service`
-- `priority`
-- `source_feed_url`
-- aantallen nieuwe en gefilterde meldingen
-
-## Voorbeeldfeeds
-
-Haaglanden:
-
-```text
-https://alarmeringen.nl/feeds/region/haaglanden.rss
-```
-
-Landelijk:
-
-```text
-https://alarmeringen.nl/feeds/all.rss
-```
-
-## Lovelace Incident Card
-
-Version 1.2.0 includes a bundled dashboard card for displaying the last feed or filtered alert of any monitor profile.
-
-### Add the JavaScript resource once
-
-Go to:
-
-**Settings → Dashboards → Resources → Add resource**
-
-Use:
-
-```text
-/p2000_companion/p2000-companion-card.js
-```
-
-Resource type:
-
-```text
-JavaScript Module
-```
-
-Restart Home Assistant and refresh the browser. The card then appears in the dashboard card picker as **P2000 Companion Incident Card**.
-
-### Example YAML
-
-```yaml
-type: custom:p2000-companion-card
-entity: sensor.mmt_honselersdijk_laatste_gefilterde_melding
-title: MMT Honselersdijk
-compact: false
-show_link: true
-show_raw: false
-```
-
-The visual card editor lets you choose the entity and presentation options without editing YAML.
-
-## Upgrading from 1.0 or 1.1
-
-Version 1.2.1 automatically migrates existing configuration entries to the monitor-profile format. Your feed URLs and filters are retained; removing and re-adding the integration is not required.
+MIT

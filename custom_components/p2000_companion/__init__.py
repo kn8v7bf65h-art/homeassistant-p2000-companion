@@ -1,6 +1,7 @@
 """P2000 Companion integration."""
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from homeassistant.components.http import StaticPathConfig
@@ -10,24 +11,47 @@ from homeassistant.core import HomeAssistant
 from .const import DOMAIN, PLATFORMS
 from .coordinator import P2000Coordinator
 
+_LOGGER = logging.getLogger(__name__)
+
 CARD_URL = "/p2000_companion/p2000-companion-card.js"
 CARD_PATH = Path(__file__).parent / "www" / "p2000-companion-card.js"
+DATA_FRONTEND_REGISTERED = f"{DOMAIN}_frontend_registered"
 
 
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Register the bundled Lovelace card as a static Home Assistant resource."""
+async def _async_register_frontend(hass: HomeAssistant) -> None:
+    """Serve and load the bundled Lovelace cards once per Home Assistant run."""
+    if hass.data.get(DATA_FRONTEND_REGISTERED):
+        return
+
     await hass.http.async_register_static_paths(
         [StaticPathConfig(CARD_URL, str(CARD_PATH), cache_headers=False)]
     )
+
+    # Loading the module globally makes both cards immediately available in the
+    # dashboard card picker. The static URL remains usable as a manual resource
+    # fallback on installations where global frontend module loading is disabled.
+    try:
+        from homeassistant.components.frontend import add_extra_js_url
+
+        add_extra_js_url(hass, CARD_URL)
+    except (ImportError, AttributeError):
+        _LOGGER.warning(
+            "Could not automatically load the P2000 Companion cards. "
+            "Add %s manually as a JavaScript module under Dashboard resources.",
+            CARD_URL,
+        )
+
+    hass.data[DATA_FRONTEND_REGISTERED] = True
+
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Set up shared integration resources."""
+    await _async_register_frontend(hass)
     return True
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Migrate older P2000 Companion config entries.
-
-    Version 1 entries predate user-defined monitor profiles. They are upgraded
-    in place so existing installations keep their feed and filter settings.
-    """
+    """Migrate older P2000 Companion config entries."""
     if entry.version > 2:
         return False
 
@@ -47,10 +71,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
         from .parser import csv_to_list, normalize_service
 
-        data = dict(entry.data)
-        options = dict(entry.options)
-        combined = {**data, **options}
-
+        combined = {**entry.data, **entry.options}
         monitor_name = str(
             combined.get(CONF_MONITOR_NAME) or entry.title or DEFAULT_NAME
         ).strip()
@@ -96,6 +117,9 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up P2000 Companion from a config entry."""
+    await _async_register_frontend(hass)
+
     coordinator = P2000Coordinator(hass, entry)
     await coordinator.async_load_cache()
     await coordinator.async_config_entry_first_refresh()
@@ -108,10 +132,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_update_options(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload an entry when monitor options change."""
     await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
