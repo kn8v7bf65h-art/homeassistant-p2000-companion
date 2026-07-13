@@ -8,6 +8,12 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers.selector import (
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
 
 from .const import (
     CONF_CITIES,
@@ -24,6 +30,15 @@ from .const import (
     DOMAIN,
 )
 from .parser import csv_to_list, normalize_service
+
+
+SERVICE_SELECT_OPTIONS: list[SelectOptionDict] = [
+    SelectOptionDict(value="ambulance", label="Ambulance"),
+    SelectOptionDict(value="fire", label="Brandweer"),
+    SelectOptionDict(value="police", label="Politie"),
+    SelectOptionDict(value="mmt", label="MMT / Lifeliner"),
+    SelectOptionDict(value="lifeboat", label="KNRM / Reddingsdienst"),
+]
 
 
 def _as_csv(value: Any) -> str:
@@ -54,8 +69,20 @@ def _schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
             ): str,
             vol.Optional(
                 CONF_SERVICES,
-                default=_as_csv(defaults.get(CONF_SERVICES, "")),
-            ): str,
+                description={
+                    "suggested_value": [
+                        normalize_service(service)
+                        for service in csv_to_list(defaults.get(CONF_SERVICES))
+                        if normalize_service(service)
+                    ]
+                },
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=SERVICE_SELECT_OPTIONS,
+                    multiple=True,
+                    mode=SelectSelectorMode.LIST,
+                )
+            ),
             vol.Optional(
                 CONF_PRIORITIES,
                 default=_as_csv(defaults.get(CONF_PRIORITIES, "")),

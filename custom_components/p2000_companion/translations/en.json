@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Add P2000 monitor",
-        "description": "Create a user-defined monitor profile. Add the integration again for every additional profile. Separate multiple values and feeds with commas.",
+        "description": "Create a monitor profile. Add the integration again for each additional profile. Separate cities, priorities and keywords with commas; choose services using checkboxes.",
         "data": {
           "monitor_name": "Monitor name",
           "feed_url": "RSS feed URL(s)",
@@ -25,7 +25,7 @@
     "step": {
       "init": {
         "title": "Edit monitor profile",
-        "description": "Change this monitor's name, feeds and filters. Every matching alert also fires the displayed monitor-specific event.",
+        "description": "Edit this monitor profile. Choose one or more services using the checkboxes.",
         "data": {
           "monitor_name": "Monitor name",
           "feed_url": "RSS feed URL(s)",

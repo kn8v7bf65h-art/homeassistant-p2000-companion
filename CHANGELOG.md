@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.1
+
+- Replaced the free-text service filter with a multi-select checkbox list.
+- Added Dutch labels for Ambulance, Brandweer, Politie, MMT/Lifeliner and KNRM.
+- Existing service filters are preserved and displayed as selected options.
+- Internal service values remain stable: `ambulance`, `fire`, `police`, `mmt`, `lifeboat`.
+
 ## 1.3.0
 
 ### Toegevoegd

@@ -109,3 +109,7 @@ max: 10
 ## Licentie
 
 MIT
+
+## Dienstfilters
+
+Vanaf versie 1.3.1 worden diensten gekozen met selectievakjes in de configuratie en opties van ieder monitorprofiel. De getoonde namen zijn Nederlands; intern gebruikt de integratie de stabiele waarden `ambulance`, `fire`, `police`, `mmt` en `lifeboat`.
