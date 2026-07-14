@@ -1,3 +1,10 @@
+# 2.2.0
+
+- Aparte persistente laatste-melding-sensoren per hulpdienst.
+- Ambulance, brandweer, politie, MMT en KNRM behouden elk hun eigen laatste melding.
+- Ondersteuning voor A0/P0/PRIO 0 als genormaliseerde prioriteit P0.
+- Bestaande monitor-events en algemene sensoren blijven ongewijzigd.
+
 # Changelog
 
 ## 2.1.0

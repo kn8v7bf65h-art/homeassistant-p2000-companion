@@ -38,4 +38,4 @@ EVENT_MONITOR_PREFIX = "p2000_monitor_"
 PLATFORMS = ["sensor"]
 
 SERVICE_OPTIONS = ["ambulance", "fire", "police", "mmt", "lifeboat"]
-PRIORITY_OPTIONS = ["P1", "P2", "P3", "B1", "B2"]
+PRIORITY_OPTIONS = ["P0", "P1", "P2", "P3", "B1", "B2"]

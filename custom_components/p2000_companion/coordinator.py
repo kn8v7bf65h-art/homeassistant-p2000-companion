@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import timedelta
 import logging
 from typing import Any
+from dataclasses import asdict
 
 import feedparser
 
@@ -54,6 +55,7 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
         self.last_filtered_alerts_count = 0
         self.last_alert: Alert | None = None
         self.last_filtered_alert: Alert | None = None
+        self.last_filtered_alert_by_service: dict[str, Alert] = {}
         self.last_monitor_event: str | None = None
         interval = int(entry.options.get(CONF_SCAN_INTERVAL, entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)))
 
@@ -69,6 +71,11 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
         stored = await self._store.async_load()
         if stored:
             self._seen_ids = set(stored.get("seen_ids", []))
+            for service, alert_data in stored.get("last_filtered_alert_by_service", {}).items():
+                try:
+                    self.last_filtered_alert_by_service[service] = Alert(**alert_data)
+                except (TypeError, ValueError):
+                    _LOGGER.warning("Could not restore stored %s alert", service)
         self._cache_loaded = True
         _LOGGER.debug("Loaded %s seen P2000 alert ids", len(self._seen_ids))
 
@@ -76,7 +83,13 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
         """Persist seen-alert cache to Home Assistant storage."""
         if len(self._seen_ids) > MAX_SEEN_IDS:
             self._seen_ids = set(list(self._seen_ids)[-KEEP_SEEN_IDS:])
-        await self._store.async_save({"seen_ids": list(self._seen_ids)})
+        await self._store.async_save({
+            "seen_ids": list(self._seen_ids),
+            "last_filtered_alert_by_service": {
+                service: asdict(alert)
+                for service, alert in self.last_filtered_alert_by_service.items()
+            },
+        })
 
 
     @property
@@ -97,23 +110,11 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
     @property
     def feed_url(self) -> str:
         """Return the configured feed URL field."""
-        return str(self.entry.options.get(CONF_FEED_URL, self.entry.data.get(CONF_FEED_URL, "")))
-
-
-    @property
-    def monitor_name(self) -> str:
-        """Return this user-defined monitor profile name."""
         return str(
             self.entry.options.get(
-                CONF_MONITOR_NAME,
-                self.entry.data.get(CONF_MONITOR_NAME, self.entry.title),
+                CONF_FEED_URL, self.entry.data.get(CONF_FEED_URL, "")
             )
-        ).strip() or self.entry.title
-
-    @property
-    def monitor_event(self) -> str:
-        """Return the monitor-specific filtered event type."""
-        return f"{EVENT_MONITOR_PREFIX}{slugify_event_name(self.monitor_name)}"
+        )
 
     @property
     def feed_urls(self) -> list[str]:
@@ -164,6 +165,13 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
         first_filtered = next((a for a in alerts if self._matches_filters(a)), None)
         if first_filtered:
             self.last_filtered_alert = first_filtered
+        for candidate in alerts:
+            if (
+                candidate.service
+                and candidate.service not in self.last_filtered_alert_by_service
+                and self._matches_filters(candidate)
+            ):
+                self.last_filtered_alert_by_service[candidate.service] = candidate
 
         if not self._seen_ids:
             self._seen_ids = {alert.id for alert in alerts}
@@ -191,6 +199,8 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
 
             if self._matches_filters(alert):
                 self.last_filtered_alert = alert
+                if alert.service:
+                    self.last_filtered_alert_by_service[alert.service] = alert
                 self.last_filtered_alerts_count += 1
                 event_data = alert.as_event_data()
                 event_data.update({

@@ -1,5 +1,42 @@
 # P2000 Companion
 
+## Nieuw in 2.2.0: laatste melding per hulpdienst
+
+Iedere monitor maakt nu naast **Laatste gefilterde melding** ook afzonderlijke sensoren aan voor:
+
+- Laatste ambulancemelding
+- Laatste brandweermelding
+- Laatste politiemelding
+- Laatste MMT-melding
+- Laatste KNRM-melding
+
+Deze sensoren bewaren elk hun eigen laatste passende melding. Een nieuwe politiemelding overschrijft dus niet langer de laatste ambulancemelding. De waarden worden persistent opgeslagen en na een herstart hersteld.
+
+Voor een monitor met de naam `P2000_Telegram` zijn de entiteits-ID's doorgaans:
+
+```text
+sensor.p2000_telegram_laatste_ambulancemelding
+sensor.p2000_telegram_laatste_brandweermelding
+sensor.p2000_telegram_laatste_politiemelding
+sensor.p2000_telegram_laatste_mmt_melding
+sensor.p2000_telegram_laatste_knrm_melding
+```
+
+Controleer de exacte ID's onder **Instellingen → Apparaten & diensten → P2000 Companion → Entiteiten**.
+
+Voorbeeldkaart:
+
+```yaml
+type: custom:p2000-companion-monitors-card
+title: Ambulance 🚑
+entities:
+  - sensor.p2000_telegram_laatste_ambulancemelding
+show_empty: true
+```
+
+De parser ondersteunt nu ook `A0`, `P0` en `PRIO 0`, genormaliseerd als `P0`.
+
+
 Home Assistant-integratie voor Nederlandse P2000-meldingen via **RSS** en vanaf v2.1.0 ook realtime via **Telegram/Telethon**. Monitorprofielen leveren sensoren, algemene events en een eigen event per monitor.
 
 ## Nieuw in 2.1.0: Telegram-provider

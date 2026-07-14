@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import timedelta
 import logging
 from typing import Any
+from dataclasses import asdict
 
 from homeassistant.config_entries import ConfigEntryAuthFailed
 from homeassistant.core import HomeAssistant
@@ -51,6 +52,7 @@ class P2000TelegramCoordinator(DataUpdateCoordinator[list[Alert]]):
         self.last_filtered_alerts_count = 0
         self.last_alert: Alert | None = None
         self.last_filtered_alert: Alert | None = None
+        self.last_filtered_alert_by_service: dict[str, Alert] = {}
         self.last_monitor_event: str | None = None
         super().__init__(
             hass,
@@ -91,11 +93,22 @@ class P2000TelegramCoordinator(DataUpdateCoordinator[list[Alert]]):
         stored = await self._store.async_load()
         if stored:
             self._seen_ids = set(stored.get("seen_ids", []))
+            for service, alert_data in stored.get("last_filtered_alert_by_service", {}).items():
+                try:
+                    self.last_filtered_alert_by_service[service] = Alert(**alert_data)
+                except (TypeError, ValueError):
+                    _LOGGER.warning("Could not restore stored %s alert", service)
 
     async def _async_save_cache(self) -> None:
         if len(self._seen_ids) > MAX_SEEN_IDS:
             self._seen_ids = set(list(self._seen_ids)[-KEEP_SEEN_IDS:])
-        await self._store.async_save({"seen_ids": list(self._seen_ids)})
+        await self._store.async_save({
+            "seen_ids": list(self._seen_ids),
+            "last_filtered_alert_by_service": {
+                service: asdict(alert)
+                for service, alert in self.last_filtered_alert_by_service.items()
+            },
+        })
 
     async def async_start(self) -> None:
         """Connect Telethon and register the realtime message handler."""
@@ -164,6 +177,8 @@ class P2000TelegramCoordinator(DataUpdateCoordinator[list[Alert]]):
             self.last_alert = alerts[0]
             if self._matches_filters(alerts[0]):
                 self.last_filtered_alert = alerts[0]
+                if alerts[0].service:
+                    self.last_filtered_alert_by_service[alerts[0].service] = alerts[0]
             if alerts[0].id not in self._seen_ids:
                 self._seen_ids.add(alerts[0].id)
                 await self._async_save_cache()
@@ -196,11 +211,16 @@ class P2000TelegramCoordinator(DataUpdateCoordinator[list[Alert]]):
 
         if self._matches_filters(alert):
             self.last_filtered_alert = alert
+            if alert.service:
+                self.last_filtered_alert_by_service[alert.service] = alert
             self.last_filtered_alerts_count = 1
             self.last_monitor_event = self.monitor_event
             self.hass.bus.async_fire(EVENT_FILTERED_ALERT, feed_event_data)
             self.hass.bus.async_fire(EVENT_LEGACY_FILTERED_ALERT, feed_event_data)
             self.hass.bus.async_fire(self.monitor_event, feed_event_data)
+
+        # Persist both duplicate cache and per-service last alerts.
+        await self._async_save_cache()
 
         # Push the new state to sensor entities immediately.
         self.async_set_updated_data([alert])
