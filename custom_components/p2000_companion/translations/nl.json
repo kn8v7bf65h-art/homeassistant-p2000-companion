@@ -1,42 +1,81 @@
 {
+  "title": "P2000 Companion",
   "config": {
     "step": {
       "user": {
-        "title": "P2000-monitor toevoegen",
-        "description": "Maak een eigen monitorprofiel. Voeg de integratie opnieuw toe voor ieder extra profiel. Meerdere plaatsen, prioriteiten en trefwoorden kun je scheiden met komma’s; diensten kies je met selectievakjes. De laatste feedmelding-sensor staat standaard uit om dubbele entiteiten te voorkomen.",
+        "title": "Bron kiezen",
+        "description": "Kies hoe deze monitor P2000-meldingen ontvangt.",
+        "data": {"provider": "Provider"}
+      },
+      "rss": {
+        "title": "RSS-monitor toevoegen",
+        "description": "Maak een monitor op basis van een of meer RSS-feeds. Meerdere URL's mogen met komma's worden gescheiden.",
         "data": {
-          "monitor_name": "Naam van monitor",
+          "monitor_name": "Monitornaam",
           "feed_url": "RSS-feed URL('s)",
-          "cities": "Plaatsen",
+          "cities": "Plaatsen (komma-gescheiden)",
           "services": "Diensten",
-          "priorities": "Prioriteiten",
-          "text_contains": "Tekst bevat (één van)",
+          "priorities": "Prioriteiten (komma-gescheiden)",
+          "text_contains": "Tekst bevat één van deze woorden",
           "exclude_words": "Woorden uitsluiten",
-          "scan_interval": "Verversinterval in seconden",
-          "create_feed_sensor": "Laatste feedmelding-sensor aanmaken"
+          "create_feed_sensor": "Laatste feedmelding-sensor aanmaken",
+          "scan_interval": "Update-interval in seconden"
         }
+      },
+      "telegram": {
+        "title": "Telegram-monitor toevoegen",
+        "description": "Vul je eigen Telegram API-gegevens van my.telegram.org in. De gegevens worden lokaal in Home Assistant opgeslagen. Je ontvangt hierna een inlogcode van Telegram.",
+        "data": {
+          "monitor_name": "Monitornaam",
+          "telegram_api_id": "Telegram API ID",
+          "telegram_api_hash": "Telegram API hash",
+          "telegram_phone": "Telefoonnummer inclusief landcode",
+          "telegram_chat": "Chat-ID of openbare gebruikersnaam",
+          "cities": "Plaatsen (komma-gescheiden)",
+          "services": "Diensten",
+          "priorities": "Prioriteiten (komma-gescheiden)",
+          "text_contains": "Tekst bevat één van deze woorden",
+          "exclude_words": "Woorden uitsluiten"
+        }
+      },
+      "telegram_code": {
+        "title": "Telegram-inlogcode",
+        "description": "Vul de code in die Telegram naar je account heeft gestuurd.",
+        "data": {"telegram_code": "Inlogcode"}
+      },
+      "telegram_password": {
+        "title": "Telegram tweestapsverificatie",
+        "description": "Je Telegram-account heeft tweestapsverificatie. Vul het wachtwoord in.",
+        "data": {"telegram_password": "2FA-wachtwoord"}
       }
     },
     "error": {
-      "invalid_url": "Voer één of meer geldige http(s)-URL's in.",
-      "name_required": "Geef de monitor een naam."
+      "invalid_url": "Vul minimaal één geldige HTTP- of HTTPS-URL in.",
+      "invalid_phone": "Telegram accepteert dit telefoonnummer niet.",
+      "invalid_code": "De Telegram-inlogcode is ongeldig.",
+      "expired_code": "De Telegram-inlogcode is verlopen. Start de installatie opnieuw.",
+      "invalid_password": "Het Telegram 2FA-wachtwoord is ongeldig.",
+      "telegram_flood_wait": "Telegram heeft tijdelijk te veel pogingen gedetecteerd. Probeer later opnieuw.",
+      "telegram_connection_error": "Kon geen verbinding maken met Telegram of geen code versturen.",
+      "telegram_login_error": "Telegram kon de aanmelding niet voltooien. Controleer het logboek."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Monitorprofiel aanpassen",
-        "description": "Pas de naam, feeds en filters van deze monitor aan. Kies één of meer diensten met de selectievakjes. Schakel de feedmelding-sensor alleen in als je die voor dit profiel echt nodig hebt.",
+        "title": "Monitor aanpassen",
+        "description": "Pas de broninstellingen en filters van deze monitor aan.",
         "data": {
-          "monitor_name": "Naam van monitor",
+          "monitor_name": "Monitornaam",
           "feed_url": "RSS-feed URL('s)",
-          "cities": "Plaatsen",
+          "telegram_chat": "Telegram chat-ID of openbare gebruikersnaam",
+          "cities": "Plaatsen (komma-gescheiden)",
           "services": "Diensten",
-          "priorities": "Prioriteiten",
-          "text_contains": "Tekst bevat (één van)",
+          "priorities": "Prioriteiten (komma-gescheiden)",
+          "text_contains": "Tekst bevat één van deze woorden",
           "exclude_words": "Woorden uitsluiten",
-          "scan_interval": "Verversinterval in seconden",
-          "create_feed_sensor": "Laatste feedmelding-sensor aanmaken"
+          "create_feed_sensor": "Laatste feedmelding-sensor aanmaken",
+          "scan_interval": "Update-interval in seconden"
         }
       }
     }

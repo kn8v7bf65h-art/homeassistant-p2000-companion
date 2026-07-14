@@ -6,7 +6,12 @@ DEFAULT_NAME = "P2000 Monitor"
 DEFAULT_FEED_URL = "https://alarmeringen.nl/feeds/region/haaglanden.rss"
 DEFAULT_SCAN_INTERVAL = 60
 DEFAULT_CREATE_FEED_SENSOR = False
+DEFAULT_PROVIDER = "rss"
 
+PROVIDER_RSS = "rss"
+PROVIDER_TELEGRAM = "telegram"
+
+CONF_PROVIDER = "provider"
 CONF_MONITOR_NAME = "monitor_name"
 CONF_FEED_URL = "feed_url"
 CONF_CITIES = "cities"
@@ -16,6 +21,14 @@ CONF_EXCLUDE_WORDS = "exclude_words"
 CONF_TEXT_CONTAINS = "text_contains"
 CONF_SCAN_INTERVAL = "scan_interval"
 CONF_CREATE_FEED_SENSOR = "create_feed_sensor"
+
+CONF_TELEGRAM_API_ID = "telegram_api_id"
+CONF_TELEGRAM_API_HASH = "telegram_api_hash"
+CONF_TELEGRAM_PHONE = "telegram_phone"
+CONF_TELEGRAM_CHAT = "telegram_chat"
+CONF_TELEGRAM_SESSION = "telegram_session"
+CONF_TELEGRAM_CODE = "telegram_code"
+CONF_TELEGRAM_PASSWORD = "telegram_password"
 
 EVENT_FEED_ALERT = "p2000_feed_alert"
 EVENT_FILTERED_ALERT = "p2000_filtered_alert"

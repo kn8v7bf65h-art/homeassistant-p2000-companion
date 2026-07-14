@@ -1,44 +1,28 @@
 {
+  "title": "P2000 Companion",
   "config": {
     "step": {
-      "user": {
-        "title": "Add P2000 monitor",
-        "description": "Create a monitor profile. Add the integration again for each additional profile. Separate cities, priorities and keywords with commas; choose services using checkboxes. The last feed alert sensor is disabled by default to avoid duplicate entities.",
+      "user": {"title": "Choose source", "description": "Choose how this monitor receives P2000 alerts.", "data": {"provider": "Provider"}},
+      "rss": {
+        "title": "Add RSS monitor",
+        "description": "Create a monitor using one or more RSS feeds. Separate multiple URLs with commas.",
         "data": {
-          "monitor_name": "Monitor name",
-          "feed_url": "RSS feed URL(s)",
-          "cities": "Cities",
-          "services": "Services",
-          "priorities": "Priorities",
-          "text_contains": "Text contains (any)",
-          "exclude_words": "Exclude words",
-          "scan_interval": "Scan interval in seconds",
-          "create_feed_sensor": "Create last feed alert sensor"
+          "monitor_name": "Monitor name", "feed_url": "RSS feed URL(s)", "cities": "Cities (comma-separated)", "services": "Services", "priorities": "Priorities (comma-separated)", "text_contains": "Text contains one of", "exclude_words": "Excluded words", "create_feed_sensor": "Create last feed alert sensor", "scan_interval": "Update interval in seconds"
         }
-      }
+      },
+      "telegram": {
+        "title": "Add Telegram monitor",
+        "description": "Enter your own Telegram API credentials from my.telegram.org. They are stored locally by Home Assistant. Telegram will send you a login code next.",
+        "data": {
+          "monitor_name": "Monitor name", "telegram_api_id": "Telegram API ID", "telegram_api_hash": "Telegram API hash", "telegram_phone": "Phone number including country code", "telegram_chat": "Chat ID or public username", "cities": "Cities (comma-separated)", "services": "Services", "priorities": "Priorities (comma-separated)", "text_contains": "Text contains one of", "exclude_words": "Excluded words"
+        }
+      },
+      "telegram_code": {"title": "Telegram login code", "description": "Enter the code Telegram sent to your account.", "data": {"telegram_code": "Login code"}},
+      "telegram_password": {"title": "Telegram two-step verification", "description": "Your Telegram account uses two-step verification. Enter the password.", "data": {"telegram_password": "2FA password"}}
     },
     "error": {
-      "invalid_url": "Enter one or more valid http(s) URLs.",
-      "name_required": "Give the monitor a name."
+      "invalid_url": "Enter at least one valid HTTP or HTTPS URL.", "invalid_phone": "Telegram did not accept this phone number.", "invalid_code": "The Telegram login code is invalid.", "expired_code": "The Telegram login code expired. Start setup again.", "invalid_password": "The Telegram 2FA password is invalid.", "telegram_flood_wait": "Telegram detected too many attempts. Try again later.", "telegram_connection_error": "Could not connect to Telegram or send a code.", "telegram_login_error": "Telegram could not complete sign-in. Check the logs."
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Edit monitor profile",
-        "description": "Edit this monitor profile. Choose one or more services using the checkboxes. Enable the feed sensor only when you need it for this profile.",
-        "data": {
-          "monitor_name": "Monitor name",
-          "feed_url": "RSS feed URL(s)",
-          "cities": "Cities",
-          "services": "Services",
-          "priorities": "Priorities",
-          "text_contains": "Text contains (any)",
-          "exclude_words": "Exclude words",
-          "scan_interval": "Scan interval in seconds",
-          "create_feed_sensor": "Create last feed alert sensor"
-        }
-      }
-    }
-  }
+  "options": {"step": {"init": {"title": "Edit monitor", "description": "Edit this monitor's source settings and filters.", "data": {"monitor_name": "Monitor name", "feed_url": "RSS feed URL(s)", "telegram_chat": "Telegram chat ID or public username", "cities": "Cities (comma-separated)", "services": "Services", "priorities": "Priorities (comma-separated)", "text_contains": "Text contains one of", "exclude_words": "Excluded words", "create_feed_sensor": "Create last feed alert sensor", "scan_interval": "Update interval in seconds"}}}}
 }

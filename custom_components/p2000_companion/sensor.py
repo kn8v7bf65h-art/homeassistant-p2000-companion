@@ -8,8 +8,16 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR, DOMAIN
+from .const import (
+    CONF_CREATE_FEED_SENSOR,
+    CONF_PROVIDER,
+    DEFAULT_CREATE_FEED_SENSOR,
+    DEFAULT_PROVIDER,
+    DOMAIN,
+    PROVIDER_TELEGRAM,
+)
 from .coordinator import P2000Coordinator
+from .telegram_coordinator import P2000TelegramCoordinator
 
 
 async def async_setup_entry(
@@ -17,23 +25,23 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    coordinator: P2000Coordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: P2000Coordinator | P2000TelegramCoordinator = hass.data[DOMAIN][entry.entry_id]
     options = {**entry.data, **entry.options}
     entities: list[SensorEntity] = [
         P2000LastAlertSensor(coordinator, entry, filtered=True),
     ]
-    if bool(options.get(CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR)):
+    if options.get(CONF_PROVIDER, DEFAULT_PROVIDER) != PROVIDER_TELEGRAM and bool(options.get(CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR)):
         entities.insert(0, P2000LastAlertSensor(coordinator, entry, filtered=False))
     async_add_entities(entities)
 
 
-class P2000LastAlertSensor(CoordinatorEntity[P2000Coordinator], SensorEntity):
+class P2000LastAlertSensor(CoordinatorEntity, SensorEntity):
     """Last alert sensor for one user-defined monitor."""
 
     _attr_icon = "mdi:alarm-light"
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator: P2000Coordinator, entry: ConfigEntry, filtered: bool) -> None:
+    def __init__(self, coordinator: P2000Coordinator | P2000TelegramCoordinator, entry: ConfigEntry, filtered: bool) -> None:
         super().__init__(coordinator)
         self.entry = entry
         self.filtered = filtered
@@ -44,7 +52,7 @@ class P2000LastAlertSensor(CoordinatorEntity[P2000Coordinator], SensorEntity):
             identifiers={(DOMAIN, entry.entry_id)},
             name=coordinator.monitor_name,
             manufacturer="P2000 Companion",
-            model="RSS-monitorprofiel",
+            model="Telegram-monitorprofiel" if entry.data.get(CONF_PROVIDER, DEFAULT_PROVIDER) == PROVIDER_TELEGRAM else "RSS-monitorprofiel",
             configuration_url="https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion",
         )
 
@@ -60,6 +68,7 @@ class P2000LastAlertSensor(CoordinatorEntity[P2000Coordinator], SensorEntity):
             "monitor_name": self.coordinator.monitor_name,
             "monitor_id": self.entry.entry_id,
             "monitor_event": self.coordinator.monitor_event,
+            "provider": self.entry.data.get(CONF_PROVIDER, DEFAULT_PROVIDER),
             "feed_url": self.coordinator.feed_url,
             "feed_urls": self.coordinator.feed_urls,
             "alerts_in_feed": self.coordinator.last_update_success_count,

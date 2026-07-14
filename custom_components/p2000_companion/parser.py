@@ -228,3 +228,34 @@ def slugify_event_name(value: str) -> str:
     text = normalize_for_id(value)
     text = re.sub(r"[^a-z0-9]+", "_", text).strip("_")
     return text[:64] or "monitor"
+
+
+def parse_telegram_message(
+    text: str,
+    *,
+    chat_id: str,
+    message_id: int,
+    published: str | None = None,
+) -> Alert:
+    """Parse a Telegram P2000 message into the common Alert model."""
+    clean_text = normalize_text(text)
+    # Telegram message IDs are stable within a chat and therefore ideal for
+    # duplicate detection. Prefix with the chat so multiple chats cannot clash.
+    alert_id = hashlib.md5(
+        f"telegram|{chat_id}|{message_id}".encode("utf-8"),
+        usedforsecurity=False,
+    ).hexdigest()
+    summary = clean_text or None
+    return Alert(
+        id=alert_id,
+        title=clean_text,
+        message=clean_text,
+        summary=summary,
+        link=None,
+        published=published,
+        city=parse_city(clean_text),
+        service=parse_service(clean_text),
+        priority=parse_priority(clean_text),
+        raw_text=clean_text,
+        source_feed_url=f"telegram://{chat_id}",
+    )

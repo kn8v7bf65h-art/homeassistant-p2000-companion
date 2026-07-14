@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.1.0
+
+### Telegram/Telethon-provider
+
+- Nieuwe providerkeuze bij het toevoegen van een monitor: RSS of Telegram via Telethon.
+- De gebruiker voert zelf API ID, API hash, telefoonnummer en chat-ID in; niets is hardcoded.
+- Meertraps Telegram-aanmelding met inlogcode en optionele 2FA.
+- Veilige lokale opslag als Telethon StringSession in de Home Assistant config-entry.
+- Realtime verwerking van ieder nieuw Telegram-bericht via `events.NewMessage`.
+- Telegram-berichten gebruiken dezelfde parser, filters, sensoren en monitor-events als RSS.
+- Persistent onthouden van Telegram message-ID's om dubbele events te voorkomen.
+- Telegram-chat en filters kunnen via de opties worden aangepast.
+- Bestaande RSS-monitoren worden automatisch naar config-entryversie 4 gemigreerd.
+- Telethon 1.44.0 als vastgepinde dependency toegevoegd.
+
 ## 2.0.0
 
 ### Minder dubbele entiteiten

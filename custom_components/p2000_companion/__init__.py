@@ -9,8 +9,15 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-from .const import DOMAIN, PLATFORMS
+from .const import (
+    CONF_PROVIDER,
+    DEFAULT_PROVIDER,
+    DOMAIN,
+    PLATFORMS,
+    PROVIDER_TELEGRAM,
+)
 from .coordinator import P2000Coordinator
+from .telegram_coordinator import P2000TelegramCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -53,7 +60,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Migrate older P2000 Companion config entries."""
-    if entry.version > 3:
+    if entry.version > 4:
         return False
 
     from .const import (
@@ -88,6 +95,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             return csv_to_list(value)
 
         migrated_data = {
+            CONF_PROVIDER: DEFAULT_PROVIDER,
             CONF_MONITOR_NAME: monitor_name,
             CONF_FEED_URL: feed_url,
             CONF_CITIES: _list_value(CONF_CITIES),
@@ -116,23 +124,26 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             title=monitor_name,
             data=migrated_data,
             options={},
-            version=3,
+            version=4,
         )
         return True
 
-    # v2 monitor entries gain the opt-in feed sensor setting. Keep it disabled
-    # by default to avoid duplicate feed entities when monitors share a feed.
-    if entry.version == 2:
+    # v2/v3 entries are RSS monitors. Add missing defaults while preserving
+    # all existing filters and options.
+    if entry.version in (2, 3):
         data = dict(entry.data)
         options = dict(entry.options)
-        target = options if options else data
-        target.setdefault(CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR)
+        data.setdefault(CONF_PROVIDER, DEFAULT_PROVIDER)
+        if entry.version == 2:
+            target = options if options else data
+            target.setdefault(CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR)
         hass.config_entries.async_update_entry(
             entry,
             data=data,
             options=options,
-            version=3,
+            version=4,
         )
+
 
     return True
 
@@ -160,9 +171,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await _async_register_frontend(hass)
     await _async_remove_unused_feed_sensor(hass, entry)
 
-    coordinator = P2000Coordinator(hass, entry)
-    await coordinator.async_load_cache()
-    await coordinator.async_config_entry_first_refresh()
+    provider = entry.data.get(CONF_PROVIDER, DEFAULT_PROVIDER)
+    if provider == PROVIDER_TELEGRAM:
+        coordinator = P2000TelegramCoordinator(hass, entry)
+        await coordinator.async_load_cache()
+        await coordinator.async_start()
+        await coordinator.async_config_entry_first_refresh()
+    else:
+        coordinator = P2000Coordinator(hass, entry)
+        await coordinator.async_load_cache()
+        await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -178,7 +196,10 @@ async def async_update_options(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
+    coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
+        if isinstance(coordinator, P2000TelegramCoordinator):
+            await coordinator.async_stop()
         hass.data[DOMAIN].pop(entry.entry_id, None)
     return unload_ok

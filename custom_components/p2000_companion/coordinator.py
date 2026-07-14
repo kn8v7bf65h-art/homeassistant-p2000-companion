@@ -182,6 +182,7 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
             self.last_alert = alert
             feed_event_data = alert.as_event_data()
             feed_event_data.update({
+                "provider": "rss",
                 "monitor_name": self.monitor_name,
                 "monitor_id": self.entry.entry_id,
                 "monitor_event": self.monitor_event,
@@ -193,6 +194,7 @@ class P2000Coordinator(DataUpdateCoordinator[list[Alert]]):
                 self.last_filtered_alerts_count += 1
                 event_data = alert.as_event_data()
                 event_data.update({
+                    "provider": "rss",
                     "monitor_name": self.monitor_name,
                     "monitor_id": self.entry.entry_id,
                     "monitor_event": self.monitor_event,

@@ -1,120 +1,117 @@
 # P2000 Companion
 
-Home Assistant-integratie voor Nederlandse P2000-meldingen via RSS-feeds, met zelf te beheren monitorprofielen, events, sensoren en twee meegeleverde dashboardkaarten.
+Home Assistant-integratie voor Nederlandse P2000-meldingen via **RSS** en vanaf v2.1.0 ook realtime via **Telegram/Telethon**. Monitorprofielen leveren sensoren, algemene events en een eigen event per monitor.
 
-## Nieuw in 2.0.0: minder systeemvervuiling
+## Nieuw in 2.1.0: Telegram-provider
 
-Per monitor wordt standaard alleen de sensor **Laatste gefilterde melding** aangemaakt. De vaak identieke sensor **Laatste feedmelding** is optioneel en kan per monitor worden ingeschakeld via **Instellingen → Apparaten & diensten → P2000 Companion → Configureren**.
+Bij het toevoegen van een monitor kies je nu tussen:
 
+- **RSS-feed** — periodiek ophalen van een of meer feeds;
+- **Telegram via Telethon** — realtime meelezen met een Telegram-groep of -kanaal waartoe jouw eigen account toegang heeft.
+
+De gebruiker vult tijdens de installatie zelf in:
+
+- Telegram API ID;
+- Telegram API hash;
+- telefoonnummer inclusief landcode;
+- chat-ID, bijvoorbeeld `-1001661223938`, of een openbare gebruikersnaam;
+- de eenmalige Telegram-inlogcode;
+- eventueel het Telegram 2FA-wachtwoord.
+
+Er staan **geen Telegram API-gegevens hardcoded in de integratie**. De gegenereerde StringSession wordt lokaal opgeslagen in de Home Assistant config-entry. Behandel je Home Assistant-back-ups daarom als vertrouwelijk: de sessie vertegenwoordigt toegang tot je Telegram-account.
+
+## Telegram API-gegevens aanmaken
+
+1. Meld je aan op `my.telegram.org` met je Telegram-account.
+2. Open **API development tools**.
+3. Maak een applicatie aan.
+4. Noteer het API ID en de API hash.
+5. Voeg in Home Assistant een nieuwe P2000 Companion-monitor toe en kies **Telegram via Telethon**.
+
+Gebruik Telethon alleen voor groepen/kanalen waartoe je rechtmatig toegang hebt en respecteer de regels van de beheerder.
 
 ## Functies
 
-- Meerdere RSS-feeds per monitorprofiel
+- RSS- en Telegram-provider naast elkaar
+- Realtime Telegram `NewMessage`-verwerking
 - Zelf aan te maken monitor-/filterprofielen
 - Filters op plaats, dienst, prioriteit, tekst en uitsluitwoorden
 - Diensten: ambulance, brandweer, politie, MMT/Lifeliner en KNRM
 - Prioriteiten: P1, P2, P3, B1 en B2
 - Eén event per nieuwe melding
 - Persistente deduplicatie
-- Eigen events per monitorprofiel
-- Twee ingebouwde Lovelace-kaarten met visuele editor
+- Eigen event per monitorprofiel
+- Optionele RSS-feedmelding-sensor; standaard alleen de gefilterde sensor
+- Twee ingebouwde Lovelace-kaarten
 
 ## Installatie via HACS
 
 1. Voeg deze repository als aangepaste HACS-repository toe met categorie **Integration**.
 2. Installeer P2000 Companion.
 3. Herstart Home Assistant.
-4. Voeg één of meerdere monitorprofielen toe via **Instellingen → Apparaten & diensten → Integratie toevoegen → P2000 Companion**.
+4. Voeg een monitor toe via **Instellingen → Apparaten & diensten → Integratie toevoegen → P2000 Companion**.
+5. Kies **RSS-feed** of **Telegram via Telethon**.
 
-## Dashboardkaarten
+Telethon wordt als vastgepinde Python-dependency automatisch door Home Assistant geïnstalleerd.
 
-Vanaf v1.3.0 registreert de integratie de kaarten automatisch. Herstart Home Assistant en ververs de browser volledig. Ga daarna naar:
+## Telegram-monitor aanpassen
 
-**Dashboard → Bewerken → Kaart toevoegen**
+Via **Configureren** kun je de chat-ID en filters wijzigen. API-gegevens en de sessie blijven behouden. Wanneer je van Telegram-account of API-applicatie wilt wisselen, verwijder je de monitor en voeg je hem opnieuw toe.
 
-Zoek naar:
+## Sensor en events
 
-- **P2000 Incident Card** — één uitgebreide melding
-- **P2000 Monitorenkaart** — compact overzicht van meerdere monitorprofielen
-
-### Handmatige resource fallback
-
-Verschijnen de kaarten niet in de kaartkiezer, voeg dan onder **Instellingen → Dashboards → Resources** deze JavaScript-module toe:
+Een Telegram-monitor maakt standaard één sensor aan:
 
 ```text
-/p2000_companion/p2000-companion-card.js
+sensor.<monitornaam>_laatste_gefilterde_melding
 ```
 
-Type: **JavaScript-module**. Ververs daarna de browsercache.
-
-### Incident Card YAML
-
-```yaml
-type: custom:p2000-companion-card
-entity: sensor.mmt_honselersdijk_laatste_gefilterde_melding
-title: MMT Honselersdijk
-compact: false
-show_link: true
-show_raw: false
-show_statistics: true
-```
-
-### Monitorenkaart YAML
-
-```yaml
-type: custom:p2000-companion-monitors-card
-title: P2000-monitoren
-entities:
-  - sensor.westland_ambulance_laatste_gefilterde_melding
-  - sensor.brandweer_haaglanden_laatste_gefilterde_melding
-  - sensor.mmt_honselersdijk_laatste_gefilterde_melding
-show_empty: true
-```
-
-De exacte entiteitsnamen hangen af van de namen van je monitorprofielen.
-
-## Events
-
-Algemeen:
+Algemene events:
 
 ```text
 p2000_feed_alert
 p2000_filtered_alert
 ```
 
-Per monitorprofiel ontstaat daarnaast een event zoals:
+Profielspecifiek event, bijvoorbeeld:
 
 ```text
-p2000_monitor_mmt_honselersdijk
+p2000_monitor_live_p2000_honselersdijk
 ```
 
-Voor meerdere snel opeenvolgende meldingen wordt in automatiseringen aanbevolen:
-
-```yaml
-mode: queued
-max: 10
-```
+De eventdata bevatten onder meer `provider: telegram`, `summary`, `raw_text`, `service`, `priority`, `city`, `monitor_name` en `telegram_chat`.
 
 ## Voorbeeldautomatisering
 
 ```yaml
-alias: MMT Honselersdijk
+alias: Telegram P2000 Honselersdijk
 triggers:
   - trigger: event
-    event_type: p2000_monitor_mmt_honselersdijk
+    event_type: p2000_monitor_live_p2000_honselersdijk
 actions:
   - action: notify.pushover
     data:
-      title: "🚁 MMT-melding"
+      title: "🚨 P2000 Telegram"
       message: "{{ trigger.event.data.summary }}"
 mode: queued
 max: 10
 ```
 
+## Dashboardkaarten
+
+Na installatie en herstart zijn beschikbaar:
+
+- **P2000 Incident Card**
+- **P2000 Monitorenkaart**
+
+Handmatige resource-fallback:
+
+```text
+/p2000_companion/p2000-companion-card.js
+```
+
+Type: **JavaScript-module**.
+
 ## Licentie
 
 MIT
-
-## Dienstfilters
-
-Vanaf versie 2.0.0 worden diensten gekozen met selectievakjes in de configuratie en opties van ieder monitorprofiel. De getoonde namen zijn Nederlands; intern gebruikt de integratie de stabiele waarden `ambulance`, `fire`, `police`, `mmt` en `lifeboat`.
