@@ -1,5 +1,12 @@
-# P2000 Companion
+# 🚨 P2000 Companion
 
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?logo=home-assistant-community-store)](https://www.hacs.xyz/docs/faq/custom_repositories/)
+[![Made with Python](https://img.shields.io/badge/Made%20with-Python-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![GitHub release](https://img.shields.io/github/v/release/kn8v7bf65h-art/homeassistant-p2000-companion)](https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion/releases)
+[![Validate](https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion/actions/workflows/validate.yml/badge.svg)](https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion/actions/workflows/validate.yml)
+[![License: MIT](https://img.shields.io/github/license/kn8v7bf65h-art/homeassistant-p2000-companion)](LICENSE)
+
+Een Home Assistant-integratie voor het ontvangen, filteren en automatiseren van Nederlandse P2000-meldingen.
 ## Nieuw in 2.2.0: laatste melding per hulpdienst
 
 Iedere monitor maakt nu naast **Laatste gefilterde melding** ook afzonderlijke sensoren aan voor:
