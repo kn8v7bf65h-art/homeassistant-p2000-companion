@@ -155,25 +155,13 @@ Supports:
 
 ## Dashboard
 
-*(Insert screenshot here)*
-
----
-
-## Incident card
-
-*(Insert screenshot here)*
-
----
-
-## Monitor card
-
-*(Insert screenshot here)*
+![Dashboard](images/dashboard.png)
 
 ---
 
 ## Configuration
 
-*(Insert screenshot here)*
+![Configuratie](images/configuration.png)
 
 ---
 
