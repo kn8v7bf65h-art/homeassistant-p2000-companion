@@ -1,161 +1,419 @@
 # 🚨 P2000 Companion
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?logo=home-assistant-community-store)](https://www.hacs.xyz/docs/faq/custom_repositories/)
-[![Made with Python](https://img.shields.io/badge/Made%20with-Python-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
-[![GitHub release](https://img.shields.io/github/v/release/kn8v7bf65h-art/homeassistant-p2000-companion)](https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion/releases)
 [![Validate](https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion/actions/workflows/validate.yml/badge.svg)](https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion/actions/workflows/validate.yml)
-[![License: MIT](https://img.shields.io/github/license/kn8v7bf65h-art/homeassistant-p2000-companion)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/v/release/kn8v7bf65h-art/homeassistant-p2000-companion)](https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion/releases)
+[![License](https://img.shields.io/github/license/kn8v7bf65h-art/homeassistant-p2000-companion)](LICENSE)
 
-Een Home Assistant-integratie voor het ontvangen, filteren en automatiseren van Nederlandse P2000-meldingen.
-## Nieuw in 2.2.0: laatste melding per hulpdienst
+Receive, filter and automate Dutch **P2000 emergency alerts** directly inside Home Assistant.
 
-Iedere monitor maakt nu naast **Laatste gefilterde melding** ook afzonderlijke sensoren aan voor:
+P2000 Companion supports multiple providers, advanced filtering, real-time monitor events, Lovelace dashboard cards and powerful Home Assistant automations.
 
-- Laatste ambulancemelding
-- Laatste brandweermelding
-- Laatste politiemelding
-- Laatste MMT-melding
-- Laatste KNRM-melding
+---
 
-Deze sensoren bewaren elk hun eigen laatste passende melding. Een nieuwe politiemelding overschrijft dus niet langer de laatste ambulancemelding. De waarden worden persistent opgeslagen en na een herstart hersteld.
+# Features
 
-Voor een monitor met de naam `P2000_Telegram` zijn de entiteits-ID's doorgaans:
+✅ RSS provider
 
-```text
-sensor.p2000_telegram_laatste_ambulancemelding
-sensor.p2000_telegram_laatste_brandweermelding
-sensor.p2000_telegram_laatste_politiemelding
-sensor.p2000_telegram_laatste_mmt_melding
-sensor.p2000_telegram_laatste_knrm_melding
+Receive alerts directly from RSS feeds.
+
+Supported examples:
+
+- Alarmeringen.nl
+- Regional feeds
+- Custom RSS feeds
+
+---
+
+✅ Telegram provider
+
+Receive alerts directly from Telegram channels using Telethon.
+
+Supports:
+
+- Private channels
+- Public channels
+- Multiple Telegram feeds
+- Real-time events
+
+---
+
+✅ Multiple monitors
+
+Create unlimited monitor profiles.
+
+Examples:
+
+- Ambulance Haaglanden
+- Brandweer Westland
+- Politie Den Haag
+- MMT Zuid-Holland
+
+Each monitor can have its own:
+
+- Provider
+- Feed
+- Cities
+- Services
+- Priorities
+- Text filters
+- Excluded keywords
+
+---
+
+✅ Multiple providers
+
+A monitor can use:
+
+- RSS
+- Telegram
+
+Future providers are planned.
+
+---
+
+✅ Advanced filtering
+
+Filter by:
+
+- City
+- Service
+- Priority
+- Keywords
+- Excluded keywords
+
+Supported priorities:
+
+- P0
+- P1
+- P2
+- P3
+- B1
+- B2
+
+Supported services:
+
+- Ambulance
+- Brandweer
+- Politie
+- KNRM
+- MMT
+
+---
+
+✅ Home Assistant events
+
+Every monitor generates its own event.
+
+Example:
+
+```
+p2000_monitor_ambulance_haaglanden
 ```
 
-Controleer de exacte ID's onder **Instellingen → Apparaten & diensten → P2000 Companion → Entiteiten**.
+Perfect for automations.
 
-Voorbeeldkaart:
+---
 
-```yaml
-type: custom:p2000-companion-monitors-card
-title: Ambulance 🚑
-entities:
-  - sensor.p2000_telegram_laatste_ambulancemelding
-show_empty: true
+✅ Dedicated sensors
+
+Every monitor creates its own sensor.
+
+Telegram monitors additionally remember the latest alert per service.
+
+Example sensors:
+
+```
+sensor.ambulance_last_alert
+sensor.brandweer_last_alert
+sensor.politie_last_alert
+sensor.mmt_last_alert
 ```
 
-De parser ondersteunt nu ook `A0`, `P0` en `PRIO 0`, genormaliseerd als `P0`.
+---
 
+✅ Lovelace cards
 
-Home Assistant-integratie voor Nederlandse P2000-meldingen via **RSS** en vanaf v2.1.0 ook realtime via **Telegram/Telethon**. Monitorprofielen leveren sensoren, algemene events en een eigen event per monitor.
+Included custom dashboard cards:
 
-## Nieuw in 2.1.0: Telegram-provider
+- Incident Card
+- Monitors Card
 
-Bij het toevoegen van een monitor kies je nu tussen:
+Supports:
 
-- **RSS-feed** — periodiek ophalen van een of meer feeds;
-- **Telegram via Telethon** — realtime meelezen met een Telegram-groep of -kanaal waartoe jouw eigen account toegang heeft.
+- Icons
+- Priority
+- Time
+- Friendly names
+- Multiple entities
+- Empty state
+- Automatic updates
 
-De gebruiker vult tijdens de installatie zelf in:
+---
 
-- Telegram API ID;
-- Telegram API hash;
-- telefoonnummer inclusief landcode;
-- chat-ID, bijvoorbeeld `-1001661223938`, of een openbare gebruikersnaam;
-- de eenmalige Telegram-inlogcode;
-- eventueel het Telegram 2FA-wachtwoord.
+# Screenshots
 
-Er staan **geen Telegram API-gegevens hardcoded in de integratie**. De gegenereerde StringSession wordt lokaal opgeslagen in de Home Assistant config-entry. Behandel je Home Assistant-back-ups daarom als vertrouwelijk: de sessie vertegenwoordigt toegang tot je Telegram-account.
+## Dashboard
 
-## Telegram API-gegevens aanmaken
+*(Insert screenshot here)*
 
-1. Meld je aan op `my.telegram.org` met je Telegram-account.
-2. Open **API development tools**.
-3. Maak een applicatie aan.
-4. Noteer het API ID en de API hash.
-5. Voeg in Home Assistant een nieuwe P2000 Companion-monitor toe en kies **Telegram via Telethon**.
+---
 
-Gebruik Telethon alleen voor groepen/kanalen waartoe je rechtmatig toegang hebt en respecteer de regels van de beheerder.
+## Incident card
 
-## Functies
+*(Insert screenshot here)*
 
-- RSS- en Telegram-provider naast elkaar
-- Realtime Telegram `NewMessage`-verwerking
-- Zelf aan te maken monitor-/filterprofielen
-- Filters op plaats, dienst, prioriteit, tekst en uitsluitwoorden
-- Diensten: ambulance, brandweer, politie, MMT/Lifeliner en KNRM
-- Prioriteiten: P1, P2, P3, B1 en B2
-- Eén event per nieuwe melding
-- Persistente deduplicatie
-- Eigen event per monitorprofiel
-- Optionele RSS-feedmelding-sensor; standaard alleen de gefilterde sensor
-- Twee ingebouwde Lovelace-kaarten
+---
 
-## Installatie via HACS
+## Monitor card
 
-1. Voeg deze repository als aangepaste HACS-repository toe met categorie **Integration**.
-2. Installeer P2000 Companion.
-3. Herstart Home Assistant.
-4. Voeg een monitor toe via **Instellingen → Apparaten & diensten → Integratie toevoegen → P2000 Companion**.
-5. Kies **RSS-feed** of **Telegram via Telethon**.
+*(Insert screenshot here)*
 
-Telethon wordt als vastgepinde Python-dependency automatisch door Home Assistant geïnstalleerd.
+---
 
-## Telegram-monitor aanpassen
+## Configuration
 
-Via **Configureren** kun je de chat-ID en filters wijzigen. API-gegevens en de sessie blijven behouden. Wanneer je van Telegram-account of API-applicatie wilt wisselen, verwijder je de monitor en voeg je hem opnieuw toe.
+*(Insert screenshot here)*
 
-## Sensor en events
+---
 
-Een Telegram-monitor maakt standaard één sensor aan:
+# Installation
 
-```text
-sensor.<monitornaam>_laatste_gefilterde_melding
+## HACS
+
+Add this repository as a Custom Repository.
+
+Category:
+
+```
+Integration
 ```
 
-Algemene events:
+Repository:
 
-```text
-p2000_feed_alert
-p2000_filtered_alert
+```
+https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion
 ```
 
-Profielspecifiek event, bijvoorbeeld:
+Install via HACS.
 
-```text
-p2000_monitor_live_p2000_honselersdijk
+Restart Home Assistant.
+
+---
+
+# Dashboard resource
+
+The included Lovelace cards require one frontend resource.
+
+Go to:
+
+Settings
+
+→ Dashboards
+
+→ Resources
+
+Add:
+
 ```
-
-De eventdata bevatten onder meer `provider: telegram`, `summary`, `raw_text`, `service`, `priority`, `city`, `monitor_name` en `telegram_chat`.
-
-## Voorbeeldautomatisering
-
-```yaml
-alias: Telegram P2000 Honselersdijk
-triggers:
-  - trigger: event
-    event_type: p2000_monitor_live_p2000_honselersdijk
-actions:
-  - action: notify.pushover
-    data:
-      title: "🚨 P2000 Telegram"
-      message: "{{ trigger.event.data.summary }}"
-mode: queued
-max: 10
-```
-
-## Dashboardkaarten
-
-Na installatie en herstart zijn beschikbaar:
-
-- **P2000 Incident Card**
-- **P2000 Monitorenkaart**
-
-Handmatige resource-fallback:
-
-```text
 /p2000_companion/p2000-companion-card.js
 ```
 
-Type: **JavaScript-module**.
+Type:
 
-## Licentie
+```
+JavaScript Module
+```
 
-MIT
+Refresh your dashboard.
+
+---
+
+# Configuration
+
+After installation:
+
+Settings
+
+→ Devices & Services
+
+→ Add Integration
+
+Select:
+
+```
+P2000 Companion
+```
+
+Choose your provider:
+
+- RSS
+- Telegram
+
+---
+
+# RSS provider
+
+Configure:
+
+- Feed URL
+- Scan interval
+
+Example:
+
+```
+https://alarmeringen.nl/feeds/region/haaglanden.rss
+```
+
+---
+
+# Telegram provider
+
+Configure:
+
+- API ID
+- API Hash
+- Phone number
+- Telegram session
+
+P2000 Companion will automatically create a secure local session.
+
+---
+
+# Creating monitors
+
+Each monitor can filter on:
+
+- Provider
+- Cities
+- Services
+- Priorities
+- Include keywords
+- Exclude keywords
+
+---
+
+# Automations
+
+Example trigger:
+
+```yaml
+trigger:
+  - platform: event
+    event_type: p2000_monitor_ambulance_haaglanden
+```
+
+From there you can:
+
+- speak alerts
+- flash Hue lights
+- send notifications
+- trigger scripts
+- start cameras
+- anything Home Assistant supports
+
+---
+
+# Entities
+
+Examples:
+
+```
+sensor.last_feed_alert
+sensor.last_filtered_alert
+sensor.ambulance_last_alert
+sensor.brandweer_last_alert
+sensor.politie_last_alert
+sensor.mmt_last_alert
+```
+
+---
+
+# Events
+
+Example:
+
+```
+p2000_monitor_ambulance_haaglanden
+```
+
+Event data includes:
+
+- summary
+- city
+- service
+- priority
+- timestamp
+- raw message
+
+---
+
+# Troubleshooting
+
+## Dashboard says:
+
+```
+Custom element doesn't exist
+```
+
+Check whether the dashboard resource has been added:
+
+```
+/p2000_companion/p2000-companion-card.js
+```
+
+---
+
+## RSS works but Telegram doesn't
+
+Verify:
+
+- API ID
+- API Hash
+- Phone number
+- Session
+- Channel access
+
+---
+
+## No events
+
+Verify:
+
+- Monitor filters
+- Feed URL
+- Home Assistant logs
+
+---
+
+# Roadmap
+
+Planned features:
+
+- MQTT provider
+- SDR provider
+- Alert history
+- Statistics
+- Map support
+- Incident details
+- Export
+- More dashboard cards
+
+---
+
+# Contributing
+
+Bug reports and feature requests are welcome.
+
+Please include:
+
+- Home Assistant version
+- P2000 Companion version
+- Provider
+- Relevant logs
+
+---
+
+# License
+
+MIT License
