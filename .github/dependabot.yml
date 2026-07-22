@@ -1,9 +1,13 @@
 version: 2
 
 updates:
-  - package-ecosystem: github-actions
-    directory: /
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
       interval: monthly
-    labels:
-      - dependencies
+
+  - package-ecosystem: "pip"
+    directory: "/custom_components/p2000_companion"
+    schedule:
+      interval: monthly
