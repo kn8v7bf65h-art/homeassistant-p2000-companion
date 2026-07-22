@@ -1,0 +1,66 @@
+name: Bug report
+description: Meld een probleem met P2000 Companion
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bedankt voor het melden van een probleem.
+
+  - type: input
+    id: version
+    attributes:
+      label: P2000 Companion-versie
+      placeholder: 2.2.0
+    validations:
+      required: true
+
+  - type: input
+    id: home_assistant_version
+    attributes:
+      label: Home Assistant-versie
+      placeholder: 2026.7.2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider
+      options:
+        - RSS
+        - Telegram
+        - Beide
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Probleembeschrijving
+      description: Beschrijf wat er gebeurt en wat je had verwacht.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Stappen om het probleem te reproduceren
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevante logregels
+      render: text
+
+  - type: checkboxes
+    id: sensitive
+    attributes:
+      label: Beveiligingscontrole
+      options:
+        - label: Ik heb API-hashes, telefoonnummers en Telegram-sessies verwijderd.
+          required: true
