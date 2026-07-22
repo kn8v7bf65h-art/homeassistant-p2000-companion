@@ -5,7 +5,9 @@
     "@kn8v7bf65h-art"
   ],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": [
+    "http"
+  ],
   "documentation": "https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion/issues",
