@@ -8,6 +8,7 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import config_validation as cv
 
 from .const import (
     CONF_PROVIDER,
@@ -21,6 +22,7 @@ from .telegram_coordinator import P2000TelegramCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 CARD_URL = "/p2000_companion/p2000-companion-card.js"
 CARD_PATH = Path(__file__).parent / "www" / "p2000-companion-card.js"
 DATA_FRONTEND_REGISTERED = f"{DOMAIN}_frontend_registered"
