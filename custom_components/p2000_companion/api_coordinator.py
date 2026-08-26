@@ -19,7 +19,7 @@ from .const import (
     EVENT_LEGACY_FILTERED_ALERT,
 )
 from .coordinator import P2000Coordinator
-from .parser import Alert, normalize_service
+from .parser import Alert, normalize_service, parse_priority
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -93,7 +93,10 @@ class P2000ApiCoordinator(P2000Coordinator):
             raw_service = dienst.get("type")
             service = normalize_service(raw_service)
             raw_priority = item.get("prioriteit")
-            priority = str(raw_priority).upper().replace(" ", "") if raw_priority else None
+            priority = None
+            if raw_priority:
+                raw_priority_text = str(raw_priority)
+                priority = parse_priority(raw_priority_text) or raw_priority_text.upper().replace(" ", "")
             message = str(item.get("melding") or "").strip()
             city = locatie.get("stad")
             link = item.get("url")
