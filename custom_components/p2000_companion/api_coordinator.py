@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 import logging
+import re
 from typing import Any
 
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -19,10 +20,11 @@ from .const import (
     EVENT_LEGACY_FILTERED_ALERT,
 )
 from .coordinator import P2000Coordinator
-from .parser import Alert, normalize_service, parse_city, parse_priority, parse_service
+from .parser import Alert, normalize_service, parse_city, parse_priority
 
 _LOGGER = logging.getLogger(__name__)
 
+MMT_PATTERN = re.compile(r"\b(mmt|lifeliner|lfl\d+|traumaheli)\b", re.IGNORECASE)
 MMT_PRESENTATION = {
     "type": "mmt",
     "icon": "🚁",
@@ -101,12 +103,11 @@ class P2000ApiCoordinator(P2000Coordinator):
 
             # The upstream API can classify MMT/Lifeliner calls as ambulance
             # because A0/A1/A2 messages are distributed through ambulance
-            # capcodes. An explicit MMT/Lifeliner marker in the message is more
-            # specific and must therefore take precedence locally.
+            # capcodes. Explicit MMT markers in the message are more specific
+            # and therefore take precedence locally.
             raw_service = dienst.get("type")
             service = normalize_service(raw_service)
-            parsed_service = parse_service(message)
-            is_mmt = parsed_service == "mmt"
+            is_mmt = bool(MMT_PATTERN.search(message))
             if is_mmt:
                 service = "mmt"
 
