@@ -19,9 +19,15 @@ from .const import (
     EVENT_LEGACY_FILTERED_ALERT,
 )
 from .coordinator import P2000Coordinator
-from .parser import Alert, normalize_service, parse_priority
+from .parser import Alert, normalize_service, parse_city, parse_priority, parse_service
 
 _LOGGER = logging.getLogger(__name__)
+
+MMT_PRESENTATION = {
+    "type": "mmt",
+    "icon": "🚁",
+    "label": "MMT / Lifeliner",
+}
 
 
 class P2000ApiCoordinator(P2000Coordinator):
@@ -90,17 +96,37 @@ class P2000ApiCoordinator(P2000Coordinator):
             if not api_id:
                 continue
 
+            message = str(item.get("melding") or "").strip()
+            link = item.get("url")
+
+            # The upstream API can classify MMT/Lifeliner calls as ambulance
+            # because A0/A1/A2 messages are distributed through ambulance
+            # capcodes. An explicit MMT/Lifeliner marker in the message is more
+            # specific and must therefore take precedence locally.
             raw_service = dienst.get("type")
             service = normalize_service(raw_service)
+            parsed_service = parse_service(message)
+            is_mmt = parsed_service == "mmt"
+            if is_mmt:
+                service = "mmt"
+
             raw_priority = item.get("prioriteit")
             priority = None
             if raw_priority:
                 raw_priority_text = str(raw_priority)
-                priority = parse_priority(raw_priority_text) or raw_priority_text.upper().replace(" ", "")
-            message = str(item.get("melding") or "").strip()
-            city = locatie.get("stad")
-            link = item.get("url")
+                priority = (
+                    parse_priority(raw_priority_text)
+                    or raw_priority_text.upper().replace(" ", "")
+                )
+
+            # Prefer the structured API city, but fall back to our parser when
+            # the API could not split the location (e.g. 's-Gravenhage).
+            city = locatie.get("stad") or parse_city(message, link)
             published = tijdstip.get("raw") or tijdstip.get("formatted")
+
+            service_type = MMT_PRESENTATION["type"] if is_mmt else raw_service
+            service_icon = MMT_PRESENTATION["icon"] if is_mmt else dienst.get("icon")
+            service_label = MMT_PRESENTATION["label"] if is_mmt else dienst.get("label")
 
             alert = Alert(
                 id=api_id,
@@ -118,14 +144,19 @@ class P2000ApiCoordinator(P2000Coordinator):
             alerts.append(alert)
             fresh_metadata[api_id] = {
                 "api_id": item.get("id"),
-                "service_type": raw_service,
-                "service_icon": dienst.get("icon"),
+                "service_type": service_type,
+                "service_icon": service_icon,
                 "service_color": dienst.get("color"),
-                "service_label": dienst.get("label"),
+                "service_label": service_label,
+                "api_service_type": raw_service,
+                "api_service_icon": dienst.get("icon"),
+                "api_service_color": dienst.get("color"),
+                "api_service_label": dienst.get("label"),
+                "service_corrected": is_mmt,
                 "priority_label": raw_priority,
                 "kind": item.get("soort"),
                 "location_street": locatie.get("straat"),
-                "location_city": locatie.get("stad"),
+                "location_city": city,
                 "location_full": locatie.get("volledig"),
                 "time_raw": tijdstip.get("raw"),
                 "time_formatted": tijdstip.get("formatted"),
