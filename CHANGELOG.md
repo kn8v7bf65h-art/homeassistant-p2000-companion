@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.2.0
+
+### API-only Lovelace kaarten
+
+- Nieuwe **P2000 API Incident Card** voor één melding uit uitsluitend de officiële P2000 Haaglanden API-provider.
+- Nieuwe **P2000 API Hulpdienstenkaart** met de laatste melding per hulpdienst uit één API-monitor.
+- De kaarten accepteren alleen entiteiten met `provider: api`; RSS- en Telegram-entiteiten worden niet aangeboden.
+- Het hulpdienstenoverzicht gebruikt alleen de aparte dienstsensoren met `service_filter`, zodat generieke sensors niet dubbel worden weergegeven.
+- Ondersteuning voor API-velden zoals `service_icon`, `service_color`, `service_label`, `priority_label`, `location_full` en `time_relative`.
+- De incidentkaart kan tonen of een dienst of locatie lokaal is gecorrigeerd door P2000 Companion.
+- Optionele weergave van capcodes en een directe link naar de originele melding.
+- Nieuwe kaarten zijn beschikbaar via `/p2000_companion/p2000-api-card.js`.
+- Bestaande P2000 Incident Card en Monitorenkaart blijven ongewijzigd beschikbaar.
+
 ## 3.1.1
 
 ### API classificatie- en locatiecorrecties
