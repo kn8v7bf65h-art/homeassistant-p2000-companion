@@ -3,6 +3,13 @@
   "config": {
     "step": {
       "user": {"title": "Choose source", "description": "Choose how this monitor receives P2000 alerts.", "data": {"provider": "Provider"}},
+      "api": {
+        "title": "Add P2000 Haaglanden API monitor",
+        "description": "Use the official P2000 Haaglanden API. By default the integration fetches the latest 10 alerts every 10 seconds and applies filters locally in Home Assistant.",
+        "data": {
+          "monitor_name": "Monitor name", "api_url": "API URL", "api_key": "API key", "cities": "Cities (comma-separated)", "services": "Services", "priorities": "Priorities (comma-separated)", "text_contains": "Text contains one of", "exclude_words": "Excluded words", "create_feed_sensor": "Create last feed alert sensor", "scan_interval": "Update interval in seconds"
+        }
+      },
       "rss": {
         "title": "Add RSS monitor",
         "description": "Create a monitor using one or more RSS feeds. Separate multiple URLs with commas.",
@@ -21,8 +28,8 @@
       "telegram_password": {"title": "Telegram two-step verification", "description": "Your Telegram account uses two-step verification. Enter the password.", "data": {"telegram_password": "2FA password"}}
     },
     "error": {
-      "invalid_url": "Enter at least one valid HTTP or HTTPS URL.", "invalid_phone": "Telegram did not accept this phone number.", "invalid_code": "The Telegram login code is invalid.", "expired_code": "The Telegram login code expired. Start setup again.", "invalid_password": "The Telegram 2FA password is invalid.", "telegram_flood_wait": "Telegram detected too many attempts. Try again later.", "telegram_connection_error": "Could not connect to Telegram or send a code.", "telegram_login_error": "Telegram could not complete sign-in. Check the logs."
+      "invalid_url": "Enter at least one valid HTTP or HTTPS URL.", "api_key_required": "Enter an API key.", "invalid_phone": "Telegram did not accept this phone number.", "invalid_code": "The Telegram login code is invalid.", "expired_code": "The Telegram login code expired. Start setup again.", "invalid_password": "The Telegram 2FA password is invalid.", "telegram_flood_wait": "Telegram detected too many attempts. Try again later.", "telegram_connection_error": "Could not connect to Telegram or send a code.", "telegram_login_error": "Telegram could not complete sign-in. Check the logs."
     }
   },
-  "options": {"step": {"init": {"title": "Edit monitor", "description": "Edit this monitor's source settings and filters.", "data": {"monitor_name": "Monitor name", "feed_url": "RSS feed URL(s)", "telegram_chat": "Telegram chat ID or public username", "cities": "Cities (comma-separated)", "services": "Services", "priorities": "Priorities (comma-separated)", "text_contains": "Text contains one of", "exclude_words": "Excluded words", "create_feed_sensor": "Create last feed alert sensor", "scan_interval": "Update interval in seconds"}}}}
+  "options": {"step": {"init": {"title": "Edit monitor", "description": "Edit this monitor's source settings and filters.", "data": {"monitor_name": "Monitor name", "api_url": "API URL", "api_key": "API key", "feed_url": "RSS feed URL(s)", "telegram_chat": "Telegram chat ID or public username", "cities": "Cities (comma-separated)", "services": "Services", "priorities": "Priorities (comma-separated)", "text_contains": "Text contains one of", "exclude_words": "Excluded words", "create_feed_sensor": "Create last feed alert sensor", "scan_interval": "Update interval in seconds"}}}}
 }
