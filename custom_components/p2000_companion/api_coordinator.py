@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 import logging
+import re
 from typing import Any
 
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -19,9 +20,41 @@ from .const import (
     EVENT_LEGACY_FILTERED_ALERT,
 )
 from .coordinator import P2000Coordinator
-from .parser import Alert, normalize_service, parse_priority
+from .parser import Alert, normalize_service, parse_city, parse_priority
 
 _LOGGER = logging.getLogger(__name__)
+
+MMT_PATTERN = re.compile(r"\b(mmt|lifeliner|lfl\d+|traumaheli)\b", re.IGNORECASE)
+DEN_HAAG_PATTERN = re.compile(r"(?:'s[- ]?gravenhage|s[- ]?gravenhage|den haag)", re.IGNORECASE)
+STREET_BEFORE_CITY_PATTERN = re.compile(
+    r"\b([A-ZÀ-ÖØ-öø-ÿ][\w'’.-]*(?:straat|laan|weg|plein|kade|singel|dijk|gracht|hof|pad|park|steeg|markt|baan|boulevard|plantsoen|wal|haven|zoom|veld|akker|dreef))\s+(?:'s[- ]?gravenhage|s[- ]?gravenhage|den haag)\b",
+    re.IGNORECASE,
+)
+MMT_PRESENTATION = {
+    "type": "mmt",
+    "icon": "🚁",
+    "label": "MMT / Lifeliner",
+}
+
+
+def _api_city(message: str, api_city: str | None, link: str | None) -> str | None:
+    """Return a normalized city, repairing known upstream parsing gaps."""
+    if api_city:
+        if DEN_HAAG_PATTERN.fullmatch(str(api_city).strip()):
+            return "Den Haag"
+        return str(api_city).strip()
+    if DEN_HAAG_PATTERN.search(message):
+        return "Den Haag"
+    return parse_city(message, link)
+
+
+def _api_street(message: str, api_street: str | None, city: str | None) -> str | None:
+    """Return a cleaned street when the upstream API kept incident text in it."""
+    if city == "Den Haag":
+        match = STREET_BEFORE_CITY_PATTERN.search(message)
+        if match:
+            return match.group(1).strip()
+    return str(api_street).strip(" ,") if api_street else None
 
 
 class P2000ApiCoordinator(P2000Coordinator):
@@ -90,17 +123,36 @@ class P2000ApiCoordinator(P2000Coordinator):
             if not api_id:
                 continue
 
+            message = str(item.get("melding") or "").strip()
+            link = item.get("url")
+
             raw_service = dienst.get("type")
             service = normalize_service(raw_service)
+            is_mmt = bool(MMT_PATTERN.search(message))
+            if is_mmt:
+                service = "mmt"
+
             raw_priority = item.get("prioriteit")
             priority = None
             if raw_priority:
                 raw_priority_text = str(raw_priority)
-                priority = parse_priority(raw_priority_text) or raw_priority_text.upper().replace(" ", "")
-            message = str(item.get("melding") or "").strip()
-            city = locatie.get("stad")
-            link = item.get("url")
+                priority = (
+                    parse_priority(raw_priority_text)
+                    or raw_priority_text.upper().replace(" ", "")
+                )
+
+            city = _api_city(message, locatie.get("stad"), link)
+            street = _api_street(message, locatie.get("straat"), city)
+            location_full = (
+                f"{street}, {city}"
+                if street and city
+                else (city or street or locatie.get("volledig"))
+            )
             published = tijdstip.get("raw") or tijdstip.get("formatted")
+
+            service_type = MMT_PRESENTATION["type"] if is_mmt else raw_service
+            service_icon = MMT_PRESENTATION["icon"] if is_mmt else dienst.get("icon")
+            service_label = MMT_PRESENTATION["label"] if is_mmt else dienst.get("label")
 
             alert = Alert(
                 id=api_id,
@@ -118,15 +170,24 @@ class P2000ApiCoordinator(P2000Coordinator):
             alerts.append(alert)
             fresh_metadata[api_id] = {
                 "api_id": item.get("id"),
-                "service_type": raw_service,
-                "service_icon": dienst.get("icon"),
+                "service_type": service_type,
+                "service_icon": service_icon,
                 "service_color": dienst.get("color"),
-                "service_label": dienst.get("label"),
+                "service_label": service_label,
+                "api_service_type": raw_service,
+                "api_service_icon": dienst.get("icon"),
+                "api_service_color": dienst.get("color"),
+                "api_service_label": dienst.get("label"),
+                "service_corrected": is_mmt,
                 "priority_label": raw_priority,
                 "kind": item.get("soort"),
-                "location_street": locatie.get("straat"),
-                "location_city": locatie.get("stad"),
-                "location_full": locatie.get("volledig"),
+                "location_street": street,
+                "location_city": city,
+                "location_full": location_full,
+                "api_location_street": locatie.get("straat"),
+                "api_location_city": locatie.get("stad"),
+                "api_location_full": locatie.get("volledig"),
+                "location_corrected": bool(city and not locatie.get("stad")) or street != locatie.get("straat"),
                 "time_raw": tijdstip.get("raw"),
                 "time_formatted": tijdstip.get("formatted"),
                 "time_unix": tijdstip.get("unix"),
@@ -149,6 +210,17 @@ class P2000ApiCoordinator(P2000Coordinator):
         })
         return data
 
+    def _repair_service_cache(self, alerts: list[Alert]) -> bool:
+        """Remove cached service entries whose alert is now reclassified."""
+        service_by_id = {alert.id: alert.service for alert in alerts}
+        changed = False
+        for cached_service, cached_alert in list(self.last_filtered_alert_by_service.items()):
+            corrected_service = service_by_id.get(cached_alert.id)
+            if corrected_service and corrected_service != cached_service:
+                self.last_filtered_alert_by_service.pop(cached_service, None)
+                changed = True
+        return changed
+
     async def _async_update_data(self) -> list[Alert]:
         if not self._cache_loaded:
             await self.async_load_cache()
@@ -161,6 +233,7 @@ class P2000ApiCoordinator(P2000Coordinator):
         if not alerts:
             return []
 
+        cache_changed = self._repair_service_cache(alerts)
         self.last_alert = alerts[0]
         first_filtered = next((a for a in alerts if self._matches_filters(a)), None)
         if first_filtered:
@@ -172,13 +245,13 @@ class P2000ApiCoordinator(P2000Coordinator):
                 and self._matches_filters(candidate)
             ):
                 self.last_filtered_alert_by_service[candidate.service] = candidate
+                cache_changed = True
 
         if not self._seen_ids:
             self._seen_ids = {alert.id for alert in alerts}
             await self._async_save_cache()
             return alerts
 
-        # API is newest-first. Fire all unseen results oldest -> newest.
         new_alerts = [alert for alert in reversed(alerts) if alert.id not in self._seen_ids]
         self.last_new_alerts_count = len(new_alerts)
 
@@ -198,6 +271,6 @@ class P2000ApiCoordinator(P2000Coordinator):
                 self.hass.bus.async_fire(EVENT_LEGACY_FILTERED_ALERT, event_data)
                 self.hass.bus.async_fire(self.monitor_event, event_data)
 
-        if new_alerts:
+        if new_alerts or cache_changed:
             await self._async_save_cache()
         return alerts

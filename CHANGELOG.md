@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.1.1
+
+### API classificatie- en locatiecorrecties
+
+- MMT-, Lifeliner- en traumahelimeldingen worden lokaal als **MMT** geclassificeerd wanneer de API ze als ambulance aanlevert.
+- De oorspronkelijke API-classificatie blijft beschikbaar via `api_service_*` attributen.
+- Persistente dienstcache wordt hersteld wanneer een eerder verkeerd geclassificeerde melding opnieuw wordt ingelezen.
+- `'s-Gravenhage`, `s-Gravenhage` en `Den Haag` worden consistent genormaliseerd naar **Den Haag**.
+- Wanneer de API geen stad uit de melding kan halen, gebruikt P2000 Companion een lokale fallback.
+- Straatnamen zoals `Lozerlaan` worden lokaal uit de melding gehaald wanneer de API incidenttekst in `location_street` heeft opgenomen.
+- De originele API-locatie blijft ter controle beschikbaar via `api_location_*` attributen.
+
 ## 3.1.0
 
 ### Officiële P2000 Haaglanden API-provider
