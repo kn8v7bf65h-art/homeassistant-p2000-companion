@@ -27,7 +27,11 @@ _LOGGER = logging.getLogger(__name__)
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
-CARD_URL = "/p2000_companion/p2000-companion-card.js"
+CARD_URLS = [
+    "/p2000_companion/p2000-companion-card.js",
+    "/p2000_companion/p2000-api-card.js",
+    "/p2000_companion/p2000-api-grid-card.js",
+]
 WWW_URL = "/p2000_companion"
 WWW_PATH = Path(__file__).parent / "www"
 
@@ -39,12 +43,14 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
     if hass.data.get(DATA_FRONTEND_REGISTERED):
         return
 
-    card_path = WWW_PATH / "p2000-companion-card.js"
     if not WWW_PATH.is_dir():
         _LOGGER.error("P2000 Companion www directory not found: %s", WWW_PATH)
         return
-    if not card_path.is_file():
-        _LOGGER.error("P2000 Companion Lovelace card not found: %s", card_path)
+
+    expected_files = [WWW_PATH / Path(url).name for url in CARD_URLS]
+    missing_files = [path for path in expected_files if not path.is_file()]
+    if missing_files:
+        _LOGGER.error("P2000 Companion Lovelace card file(s) not found: %s", missing_files)
         return
 
     hass.data[DATA_FRONTEND_REGISTERED] = True
@@ -57,11 +63,12 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
 
     try:
         from homeassistant.components.frontend import add_extra_js_url
-        add_extra_js_url(hass, CARD_URL)
+        for card_url in CARD_URLS:
+            add_extra_js_url(hass, card_url)
     except (ImportError, AttributeError):
         _LOGGER.warning(
-            "Could not automatically load the P2000 Companion card. Add %s manually as a JavaScript module under Dashboard resources.",
-            CARD_URL,
+            "Could not automatically load the P2000 Companion cards. Add these manually as JavaScript modules under Dashboard resources: %s",
+            ", ".join(CARD_URLS),
         )
 
 
