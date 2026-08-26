@@ -4,16 +4,21 @@ DOMAIN = "p2000_companion"
 
 DEFAULT_NAME = "P2000 Monitor"
 DEFAULT_FEED_URL = "https://alarmeringen.nl/feeds/region/haaglanden.rss"
+DEFAULT_API_URL = "https://p2000haaglanden.nl/api/v1/meldingen?limit=10"
 DEFAULT_SCAN_INTERVAL = 60
+DEFAULT_API_SCAN_INTERVAL = 10
 DEFAULT_CREATE_FEED_SENSOR = False
 DEFAULT_PROVIDER = "rss"
 
 PROVIDER_RSS = "rss"
 PROVIDER_TELEGRAM = "telegram"
+PROVIDER_API = "api"
 
 CONF_PROVIDER = "provider"
 CONF_MONITOR_NAME = "monitor_name"
 CONF_FEED_URL = "feed_url"
+CONF_API_URL = "api_url"
+CONF_API_KEY = "api_key"
 CONF_CITIES = "cities"
 CONF_SERVICES = "services"
 CONF_PRIORITIES = "priorities"

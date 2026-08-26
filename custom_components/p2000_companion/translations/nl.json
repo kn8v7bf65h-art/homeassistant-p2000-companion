@@ -7,6 +7,22 @@
         "description": "Kies hoe deze monitor P2000-meldingen ontvangt.",
         "data": {"provider": "Provider"}
       },
+      "api": {
+        "title": "P2000 Haaglanden API-monitor toevoegen",
+        "description": "Gebruik de officiële P2000 Haaglanden API. De integratie haalt standaard iedere 10 seconden de laatste 10 meldingen op en filtert daarna lokaal in Home Assistant.",
+        "data": {
+          "monitor_name": "Monitornaam",
+          "api_url": "API-URL",
+          "api_key": "API-key",
+          "cities": "Plaatsen (komma-gescheiden)",
+          "services": "Diensten",
+          "priorities": "Prioriteiten (komma-gescheiden)",
+          "text_contains": "Tekst bevat één van deze woorden",
+          "exclude_words": "Woorden uitsluiten",
+          "create_feed_sensor": "Laatste feedmelding-sensor aanmaken",
+          "scan_interval": "Update-interval in seconden"
+        }
+      },
       "rss": {
         "title": "RSS-monitor toevoegen",
         "description": "Maak een monitor op basis van een of meer RSS-feeds. Meerdere URL's mogen met komma's worden gescheiden.",
@@ -38,19 +54,12 @@
           "exclude_words": "Woorden uitsluiten"
         }
       },
-      "telegram_code": {
-        "title": "Telegram-inlogcode",
-        "description": "Vul de code in die Telegram naar je account heeft gestuurd.",
-        "data": {"telegram_code": "Inlogcode"}
-      },
-      "telegram_password": {
-        "title": "Telegram tweestapsverificatie",
-        "description": "Je Telegram-account heeft tweestapsverificatie. Vul het wachtwoord in.",
-        "data": {"telegram_password": "2FA-wachtwoord"}
-      }
+      "telegram_code": {"title": "Telegram-inlogcode", "description": "Vul de code in die Telegram naar je account heeft gestuurd.", "data": {"telegram_code": "Inlogcode"}},
+      "telegram_password": {"title": "Telegram tweestapsverificatie", "description": "Je Telegram-account heeft tweestapsverificatie. Vul het wachtwoord in.", "data": {"telegram_password": "2FA-wachtwoord"}}
     },
     "error": {
       "invalid_url": "Vul minimaal één geldige HTTP- of HTTPS-URL in.",
+      "api_key_required": "Vul een API-key in.",
       "invalid_phone": "Telegram accepteert dit telefoonnummer niet.",
       "invalid_code": "De Telegram-inlogcode is ongeldig.",
       "expired_code": "De Telegram-inlogcode is verlopen. Start de installatie opnieuw.",
@@ -67,6 +76,8 @@
         "description": "Pas de broninstellingen en filters van deze monitor aan.",
         "data": {
           "monitor_name": "Monitornaam",
+          "api_url": "API-URL",
+          "api_key": "API-key",
           "feed_url": "RSS-feed URL('s)",
           "telegram_chat": "Telegram chat-ID of openbare gebruikersnaam",
           "cities": "Plaatsen (komma-gescheiden)",

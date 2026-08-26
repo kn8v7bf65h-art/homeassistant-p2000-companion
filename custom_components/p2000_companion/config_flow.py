@@ -20,6 +20,8 @@ from homeassistant.helpers.selector import (
 )
 
 from .const import (
+    CONF_API_KEY,
+    CONF_API_URL,
     CONF_CITIES,
     CONF_CREATE_FEED_SENSOR,
     CONF_EXCLUDE_WORDS,
@@ -37,12 +39,15 @@ from .const import (
     CONF_TELEGRAM_PHONE,
     CONF_TELEGRAM_SESSION,
     CONF_TEXT_CONTAINS,
+    DEFAULT_API_SCAN_INTERVAL,
+    DEFAULT_API_URL,
     DEFAULT_CREATE_FEED_SENSOR,
     DEFAULT_FEED_URL,
     DEFAULT_NAME,
     DEFAULT_PROVIDER,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    PROVIDER_API,
     PROVIDER_RSS,
     PROVIDER_TELEGRAM,
 )
@@ -59,6 +64,7 @@ SERVICE_SELECT_OPTIONS: list[SelectOptionDict] = [
 ]
 
 PROVIDER_OPTIONS: list[SelectOptionDict] = [
+    SelectOptionDict(value=PROVIDER_API, label="P2000 Haaglanden API"),
     SelectOptionDict(value=PROVIDER_RSS, label="RSS-feed"),
     SelectOptionDict(value=PROVIDER_TELEGRAM, label="Telegram via Telethon"),
 ]
@@ -84,10 +90,7 @@ def _filter_schema(defaults: dict[str, Any] | None = None) -> dict[Any, Any]:
     defaults = defaults or {}
     return {
         vol.Optional(CONF_CITIES, default=_as_csv(defaults.get(CONF_CITIES, ""))): str,
-        vol.Optional(
-            CONF_SERVICES,
-            default=_services_default(defaults),
-        ): SelectSelector(
+        vol.Optional(CONF_SERVICES, default=_services_default(defaults)): SelectSelector(
             SelectSelectorConfig(
                 options=SERVICE_SELECT_OPTIONS,
                 multiple=True,
@@ -102,14 +105,27 @@ def _filter_schema(defaults: dict[str, Any] | None = None) -> dict[Any, Any]:
 
 def _rss_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
     defaults = defaults or {}
-    fields: dict[Any, Any] = {
+    return vol.Schema({
         vol.Required(CONF_MONITOR_NAME, default=defaults.get(CONF_MONITOR_NAME, DEFAULT_NAME)): vol.All(str, vol.Length(min=1, max=80)),
         vol.Required(CONF_FEED_URL, default=defaults.get(CONF_FEED_URL, DEFAULT_FEED_URL)): str,
         **_filter_schema(defaults),
         vol.Optional(CONF_CREATE_FEED_SENSOR, default=bool(defaults.get(CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR))): bool,
         vol.Optional(CONF_SCAN_INTERVAL, default=int(defaults.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))): vol.All(vol.Coerce(int), vol.Range(min=30, max=3600)),
-    }
-    return vol.Schema(fields)
+    })
+
+
+def _api_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
+    defaults = defaults or {}
+    return vol.Schema({
+        vol.Required(CONF_MONITOR_NAME, default=defaults.get(CONF_MONITOR_NAME, DEFAULT_NAME)): vol.All(str, vol.Length(min=1, max=80)),
+        vol.Required(CONF_API_URL, default=defaults.get(CONF_API_URL, DEFAULT_API_URL)): str,
+        vol.Required(CONF_API_KEY, default=defaults.get(CONF_API_KEY, "")): TextSelector(
+            TextSelectorConfig(type=TextSelectorType.PASSWORD)
+        ),
+        **_filter_schema(defaults),
+        vol.Optional(CONF_CREATE_FEED_SENSOR, default=bool(defaults.get(CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR))): bool,
+        vol.Optional(CONF_SCAN_INTERVAL, default=int(defaults.get(CONF_SCAN_INTERVAL, DEFAULT_API_SCAN_INTERVAL))): vol.All(vol.Coerce(int), vol.Range(min=10, max=3600)),
+    })
 
 
 def _telegram_schema(defaults: dict[str, Any] | None = None, *, include_credentials: bool = True) -> vol.Schema:
@@ -118,13 +134,11 @@ def _telegram_schema(defaults: dict[str, Any] | None = None, *, include_credenti
         vol.Required(CONF_MONITOR_NAME, default=defaults.get(CONF_MONITOR_NAME, DEFAULT_NAME)): vol.All(str, vol.Length(min=1, max=80)),
     }
     if include_credentials:
-        fields.update(
-            {
-                vol.Required(CONF_TELEGRAM_API_ID, default=defaults.get(CONF_TELEGRAM_API_ID, "")): vol.Coerce(int),
-                vol.Required(CONF_TELEGRAM_API_HASH, default=defaults.get(CONF_TELEGRAM_API_HASH, "")): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
-                vol.Required(CONF_TELEGRAM_PHONE, default=defaults.get(CONF_TELEGRAM_PHONE, "")): str,
-            }
-        )
+        fields.update({
+            vol.Required(CONF_TELEGRAM_API_ID, default=defaults.get(CONF_TELEGRAM_API_ID, "")): vol.Coerce(int),
+            vol.Required(CONF_TELEGRAM_API_HASH, default=defaults.get(CONF_TELEGRAM_API_HASH, "")): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
+            vol.Required(CONF_TELEGRAM_PHONE, default=defaults.get(CONF_TELEGRAM_PHONE, "")): str,
+        })
     fields[vol.Required(CONF_TELEGRAM_CHAT, default=defaults.get(CONF_TELEGRAM_CHAT, ""))] = str
     fields.update(_filter_schema(defaults))
     return vol.Schema(fields)
@@ -149,6 +163,16 @@ def _normalize_rss_input(user_input: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
+def _normalize_api_input(user_input: dict[str, Any]) -> dict[str, Any]:
+    data = _normalize_filters(dict(user_input))
+    data[CONF_PROVIDER] = PROVIDER_API
+    data[CONF_API_URL] = str(data.get(CONF_API_URL, DEFAULT_API_URL)).strip()
+    data[CONF_API_KEY] = str(data.get(CONF_API_KEY, "")).strip()
+    data[CONF_CREATE_FEED_SENSOR] = bool(data.get(CONF_CREATE_FEED_SENSOR, DEFAULT_CREATE_FEED_SENSOR))
+    data[CONF_SCAN_INTERVAL] = int(data.get(CONF_SCAN_INTERVAL, DEFAULT_API_SCAN_INTERVAL))
+    return data
+
+
 def _normalize_telegram_input(user_input: dict[str, Any]) -> dict[str, Any]:
     data = _normalize_filters(dict(user_input))
     data[CONF_PROVIDER] = PROVIDER_TELEGRAM
@@ -168,7 +192,7 @@ def _valid_urls(value: str) -> bool:
 class P2000CompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for P2000 Companion."""
 
-    VERSION = 4
+    VERSION = 5
 
     def __init__(self) -> None:
         self._provider = DEFAULT_PROVIDER
@@ -179,18 +203,32 @@ class P2000CompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         if user_input is not None:
             self._provider = user_input[CONF_PROVIDER]
-            return await self.async_step_rss() if self._provider == PROVIDER_RSS else await self.async_step_telegram()
+            if self._provider == PROVIDER_API:
+                return await self.async_step_api()
+            if self._provider == PROVIDER_RSS:
+                return await self.async_step_rss()
+            return await self.async_step_telegram()
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_PROVIDER, default=DEFAULT_PROVIDER): SelectSelector(
-                        SelectSelectorConfig(options=PROVIDER_OPTIONS, mode=SelectSelectorMode.LIST)
-                    )
-                }
-            ),
+            data_schema=vol.Schema({
+                vol.Required(CONF_PROVIDER, default=DEFAULT_PROVIDER): SelectSelector(
+                    SelectSelectorConfig(options=PROVIDER_OPTIONS, mode=SelectSelectorMode.LIST)
+                )
+            }),
         )
+
+    async def async_step_api(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            data = _normalize_api_input(user_input)
+            if not _valid_urls(data[CONF_API_URL]):
+                errors[CONF_API_URL] = "invalid_url"
+            elif not data[CONF_API_KEY]:
+                errors[CONF_API_KEY] = "api_key_required"
+            else:
+                return self.async_create_entry(title=data[CONF_MONITOR_NAME], data=data)
+        return self.async_show_form(step_id="api", data_schema=_api_schema(user_input), errors=errors)
 
     async def async_step_rss(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         errors: dict[str, str] = {}
@@ -232,7 +270,6 @@ class P2000CompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             try:
                 from telethon.errors import PhoneCodeExpiredError, PhoneCodeInvalidError, SessionPasswordNeededError
-
                 await self._telegram_client.sign_in(
                     phone=self._pending[CONF_TELEGRAM_PHONE],
                     code=str(user_input[CONF_TELEGRAM_CODE]).strip(),
@@ -259,7 +296,6 @@ class P2000CompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             try:
                 from telethon.errors import PasswordHashInvalidError
-
                 await self._telegram_client.sign_in(password=user_input[CONF_TELEGRAM_PASSWORD])
                 return await self._async_finish_telegram()
             except PasswordHashInvalidError:
@@ -269,19 +305,16 @@ class P2000CompanionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "telegram_login_error"
         return self.async_show_form(
             step_id="telegram_password",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_TELEGRAM_PASSWORD): TextSelector(
-                        TextSelectorConfig(type=TextSelectorType.PASSWORD)
-                    )
-                }
-            ),
+            data_schema=vol.Schema({
+                vol.Required(CONF_TELEGRAM_PASSWORD): TextSelector(
+                    TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                )
+            }),
             errors=errors,
         )
 
     async def _async_finish_telegram(self) -> FlowResult:
         from telethon.sessions import StringSession
-
         self._pending[CONF_TELEGRAM_SESSION] = StringSession.save(self._telegram_client.session)
         await self._telegram_client.disconnect()
         self._telegram_client = None
@@ -305,7 +338,16 @@ class P2000CompanionOptionsFlow(config_entries.OptionsFlow):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            if provider == PROVIDER_RSS:
+            if provider == PROVIDER_API:
+                data = _normalize_api_input(user_input)
+                if not _valid_urls(data[CONF_API_URL]):
+                    errors[CONF_API_URL] = "invalid_url"
+                elif not data[CONF_API_KEY]:
+                    errors[CONF_API_KEY] = "api_key_required"
+                else:
+                    self.hass.config_entries.async_update_entry(self._config_entry, title=data[CONF_MONITOR_NAME])
+                    return self.async_create_entry(title="", data=data)
+            elif provider == PROVIDER_RSS:
                 data = _normalize_rss_input(user_input)
                 if not _valid_urls(data[CONF_FEED_URL]):
                     errors[CONF_FEED_URL] = "invalid_url"
@@ -313,7 +355,6 @@ class P2000CompanionOptionsFlow(config_entries.OptionsFlow):
                     self.hass.config_entries.async_update_entry(self._config_entry, title=data[CONF_MONITOR_NAME])
                     return self.async_create_entry(title="", data=data)
             else:
-                # Credentials and session remain in entry.data; options only change monitor filters/chat.
                 data = _normalize_filters(dict(user_input))
                 data[CONF_PROVIDER] = PROVIDER_TELEGRAM
                 data[CONF_TELEGRAM_CHAT] = str(data[CONF_TELEGRAM_CHAT]).strip()
@@ -321,5 +362,10 @@ class P2000CompanionOptionsFlow(config_entries.OptionsFlow):
                 return self.async_create_entry(title="", data=data)
 
         defaults.setdefault(CONF_MONITOR_NAME, self._config_entry.title or DEFAULT_NAME)
-        schema = _rss_schema(defaults) if provider == PROVIDER_RSS else _telegram_schema(defaults, include_credentials=False)
+        if provider == PROVIDER_API:
+            schema = _api_schema(defaults)
+        elif provider == PROVIDER_RSS:
+            schema = _rss_schema(defaults)
+        else:
+            schema = _telegram_schema(defaults, include_credentials=False)
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)

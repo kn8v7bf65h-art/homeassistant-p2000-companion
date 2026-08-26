@@ -7,74 +7,74 @@
 
 Receive, filter and automate Dutch **P2000 emergency alerts** directly inside Home Assistant.
 
-P2000 Companion supports multiple providers, advanced filtering, real-time monitor events, Lovelace dashboard cards and powerful Home Assistant automations.
+P2000 Companion supports the official **P2000 Haaglanden API**, RSS and Telegram, plus local filtering, monitor-specific events, persistent deduplication and Lovelace cards.
 
 ---
 
-# Features
+# Providers
 
-✅ RSS provider
+## ✅ P2000 Haaglanden API
 
-Receive alerts directly from RSS feeds.
+Recommended for Haaglanden. The integration uses one combined request for all emergency services:
 
-Supported examples:
+```text
+https://p2000haaglanden.nl/api/v1/meldingen?limit=10
+```
 
-- Alarmeringen.nl
-- Regional feeds
-- Custom RSS feeds
+Default polling interval: **10 seconds**. This equals **8,640 requests per day**, below a 10,000 requests/day limit.
+
+Configure:
+
+- API key
+- API URL (pre-filled)
+- Scan interval (minimum 10 seconds)
+- Cities
+- Services
+- Priorities
+- Include/exclude text filters
+
+The API key is stored in the Home Assistant config entry and is not exposed as a sensor attribute or event field.
+
+Structured API data is preserved, including:
+
+- official alert ID
+- service type, icon, color and label
+- original priority label
+- parsed street, city and full location
+- alert kind
+- raw, formatted, Unix and relative time
+- capcodes
+- detail URL
+- API generated timestamp
+
+Existing internal service names (`ambulance`, `fire`, `police`, `mmt`, `lifeboat`) and normalized priorities (`P0`, `P1`, `P2`, `P3`, `B1`, `B2`) remain available for backwards compatibility.
+
+## ✅ RSS provider
+
+Receive alerts from RSS feeds such as Alarmeringen.nl, regional feeds or custom feeds.
+
+## ✅ Telegram provider
+
+Receive alerts from Telegram channels using Telethon, including private/public channels and real-time events.
 
 ---
 
-✅ Telegram provider
+# Multiple monitors
 
-Receive alerts directly from Telegram channels using Telethon.
-
-Supports:
-
-- Private channels
-- Public channels
-- Multiple Telegram feeds
-- Real-time events
-
----
-
-✅ Multiple monitors
-
-Create unlimited monitor profiles.
-
-Examples:
+Create multiple monitor profiles, for example:
 
 - Ambulance Haaglanden
 - Brandweer Westland
 - Politie Den Haag
 - MMT Zuid-Holland
 
-Each monitor can have its own:
-
-- Provider
-- Feed
-- Cities
-- Services
-- Priorities
-- Text filters
-- Excluded keywords
+Each monitor can have its own provider, places, services, priorities and text filters.
 
 ---
 
-✅ Multiple providers
+# Filtering
 
-A monitor can use:
-
-- RSS
-- Telegram
-
-Future providers are planned.
-
----
-
-✅ Advanced filtering
-
-Filter by:
+Filter locally in Home Assistant by:
 
 - City
 - Service
@@ -82,7 +82,7 @@ Filter by:
 - Keywords
 - Excluded keywords
 
-Supported priorities:
+Supported normalized priorities:
 
 - P0
 - P1
@@ -99,69 +99,78 @@ Supported services:
 - KNRM
 - MMT
 
+For the P2000 Haaglanden API the original API priority (for example `A1`, `A2`, `PRIO 1`) is additionally exposed as `priority_label`.
+
 ---
 
-✅ Home Assistant events
+# Home Assistant events
 
-Every monitor generates its own event.
+Every monitor generates its own event, for example:
 
-Example:
-
-```
+```text
 p2000_monitor_ambulance_haaglanden
 ```
 
-Perfect for automations.
+Generic compatibility events remain available:
+
+```text
+p2000_feed_alert
+p2000_filtered_alert
+p2000_new_alert
+```
+
+API event data can include:
+
+```text
+id
+message
+city
+service
+priority
+url
+service_type
+service_icon
+service_color
+service_label
+priority_label
+kind
+location_street
+location_city
+location_full
+time_raw
+time_formatted
+time_unix
+time_relative
+capcodes
+api_generated_at
+```
 
 ---
 
-✅ Dedicated sensors
+# Sensors
 
-Every monitor creates its own sensor.
+Every monitor includes a latest filtered alert sensor plus dedicated latest-alert sensors per emergency service.
 
-Telegram monitors additionally remember the latest alert per service.
+Optional providers can also expose the latest unfiltered feed/API alert.
 
-Example sensors:
-
-```
-sensor.ambulance_last_alert
-sensor.brandweer_last_alert
-sensor.politie_last_alert
-sensor.mmt_last_alert
-```
+API-backed sensor attributes include the same structured metadata as the events, so dashboard cards and automations can directly use API-provided icon, color, location and relative time.
 
 ---
 
-✅ Lovelace cards
+# Lovelace cards
 
 Included custom dashboard cards:
 
 - Incident Card
 - Monitors Card
 
-Supports:
+The frontend resource is loaded automatically where supported. If manual registration is required, add:
 
-- Icons
-- Priority
-- Time
-- Friendly names
-- Multiple entities
-- Empty state
-- Automatic updates
+```text
+/p2000_companion/p2000-companion-card.js
+```
 
----
-
-# Screenshots
-
-## Dashboard
-
-![Dashboard](images/dashboard.png)
-
----
-
-## Configuration
-
-![Configuratie](images/configuration.png)
+as a JavaScript Module under **Settings → Dashboards → Resources**.
 
 ---
 
@@ -169,236 +178,88 @@ Supports:
 
 ## HACS
 
-Add this repository as a Custom Repository.
+Add this repository as a Custom Repository with category **Integration**:
 
-Category:
-
-```
-Integration
-```
-
-Repository:
-
-```
+```text
 https://github.com/kn8v7bf65h-art/homeassistant-p2000-companion
 ```
 
-Install via HACS.
+Install through HACS and restart Home Assistant.
 
-Restart Home Assistant.
+Then go to:
 
----
+**Settings → Devices & Services → Add Integration → P2000 Companion**
 
-# Dashboard resource
+Choose one of:
 
-The included Lovelace cards require one frontend resource.
-
-Go to:
-
-Settings
-
-→ Dashboards
-
-→ Resources
-
-Add:
-
-```
-/p2000_companion/p2000-companion-card.js
-```
-
-Type:
-
-```
-JavaScript Module
-```
-
-Refresh your dashboard.
+- P2000 Haaglanden API
+- RSS-feed
+- Telegram via Telethon
 
 ---
 
-# Configuration
+# API provider example
 
-After installation:
+Create a monitor using **P2000 Haaglanden API** and enter your API key. The default URL already requests the latest 10 alerts and the default scan interval is 10 seconds.
 
-Settings
+You can then select services and locally filter cities such as Honselersdijk, Naaldwijk or Poeldijk without additional API calls.
 
-→ Devices & Services
-
-→ Add Integration
-
-Select:
-
-```
-P2000 Companion
-```
-
-Choose your provider:
-
-- RSS
-- Telegram
-
----
-
-# RSS provider
-
-Configure:
-
-- Feed URL
-- Scan interval
-
-Example:
-
-```
-https://alarmeringen.nl/feeds/region/haaglanden.rss
-```
-
----
-
-# Telegram provider
-
-Configure:
-
-- API ID
-- API Hash
-- Phone number
-- Telegram session
-
-P2000 Companion will automatically create a secure local session.
-
----
-
-# Creating monitors
-
-Each monitor can filter on:
-
-- Provider
-- Cities
-- Services
-- Priorities
-- Include keywords
-- Exclude keywords
-
----
-
-# Automations
-
-Example trigger:
+A matching event can be used directly in an automation:
 
 ```yaml
-trigger:
-  - platform: event
-    event_type: p2000_monitor_ambulance_haaglanden
-```
-
-From there you can:
-
-- speak alerts
-- flash Hue lights
-- send notifications
-- trigger scripts
-- start cameras
-- anything Home Assistant supports
-
----
-
-# Entities
-
-Examples:
-
-```
-sensor.last_feed_alert
-sensor.last_filtered_alert
-sensor.ambulance_last_alert
-sensor.brandweer_last_alert
-sensor.politie_last_alert
-sensor.mmt_last_alert
+triggers:
+  - trigger: event
+    event_type: p2000_new_alert
+conditions:
+  - condition: template
+    value_template: >
+      {{ trigger.event.data.city == 'Honselersdijk' }}
+actions:
+  - action: notify.pushover
+    data:
+      title: >
+        {{ trigger.event.data.service_icon or '🚨' }}
+        {{ trigger.event.data.service_label or trigger.event.data.service }}
+        {% if trigger.event.data.priority_label %}
+          - {{ trigger.event.data.priority_label }}
+        {% endif %}
+      message: >-
+        {{ trigger.event.data.message }}
+        {% if trigger.event.data.location_full %}
+        📍 {{ trigger.event.data.location_full }}
+        {% endif %}
+        {% if trigger.event.data.time_relative %}
+        🕒 {{ trigger.event.data.time_relative }}
+        {% endif %}
 ```
 
 ---
 
-# Events
+# Deduplication
 
-Example:
+P2000 Companion stores seen alert IDs in Home Assistant storage. For the API provider the official numeric API alert ID is used.
 
-```
-p2000_monitor_ambulance_haaglanden
-```
-
-Event data includes:
-
-- summary
-- city
-- service
-- priority
-- timestamp
-- raw message
+The API returns newest-first; if multiple alerts arrive between two polls, all unseen alerts in the returned set are emitted **oldest → newest**. On the first refresh existing API results are marked as seen so Home Assistant does not send a burst of old notifications after setup or restart.
 
 ---
 
 # Troubleshooting
 
-## Dashboard says:
+If the API monitor cannot update, verify:
 
-```
-Custom element doesn't exist
-```
-
-Check whether the dashboard resource has been added:
-
-```
-/p2000_companion/p2000-companion-card.js
-```
-
----
-
-## RSS works but Telegram doesn't
-
-Verify:
-
-- API ID
-- API Hash
-- Phone number
-- Session
-- Channel access
-
----
-
-## No events
-
-Verify:
-
-- Monitor filters
-- Feed URL
+- API key
+- API URL
+- Daily request allowance
+- Internet connectivity from Home Assistant
 - Home Assistant logs
 
----
-
-# Roadmap
-
-Planned features:
-
-- MQTT provider
-- SDR provider
-- Alert history
-- Statistics
-- Map support
-- Incident details
-- Export
-- More dashboard cards
+For a 10,000 requests/day plan, keep the scan interval at **10 seconds or higher**. Ten seconds uses 8,640 requests/day.
 
 ---
 
 # Contributing
 
-Bug reports and feature requests are welcome.
-
-Please include:
-
-- Home Assistant version
-- P2000 Companion version
-- Provider
-- Relevant logs
+Bug reports and feature requests are welcome. Please include the Home Assistant version, P2000 Companion version, provider and relevant logs.
 
 ---
 

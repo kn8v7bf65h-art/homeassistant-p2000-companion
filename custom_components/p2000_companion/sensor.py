@@ -8,18 +8,20 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .api_coordinator import P2000ApiCoordinator
 from .const import (
     CONF_CREATE_FEED_SENSOR,
     CONF_PROVIDER,
     DEFAULT_CREATE_FEED_SENSOR,
     DEFAULT_PROVIDER,
     DOMAIN,
+    PROVIDER_API,
     PROVIDER_TELEGRAM,
 )
 from .coordinator import P2000Coordinator
 from .telegram_coordinator import P2000TelegramCoordinator
 
-Coordinator = P2000Coordinator | P2000TelegramCoordinator
+Coordinator = P2000Coordinator | P2000TelegramCoordinator | P2000ApiCoordinator
 
 SERVICE_SENSOR_INFO: dict[str, tuple[str, str]] = {
     "ambulance": ("Laatste ambulancemelding", "mdi:ambulance"),
@@ -65,15 +67,17 @@ class P2000BaseSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self.entry = entry
         provider = entry.data.get(CONF_PROVIDER, DEFAULT_PROVIDER)
+        if provider == PROVIDER_TELEGRAM:
+            model = "Telegram-monitorprofiel"
+        elif provider == PROVIDER_API:
+            model = "P2000 Haaglanden API-monitorprofiel"
+        else:
+            model = "RSS-monitorprofiel"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
             name=coordinator.monitor_name,
             manufacturer="P2000 Companion",
-            model=(
-                "Telegram-monitorprofiel"
-                if provider == PROVIDER_TELEGRAM
-                else "RSS-monitorprofiel"
-            ),
+            model=model,
             configuration_url=(
                 "https://github.com/kn8v7bf65h-art/"
                 "homeassistant-p2000-companion"
@@ -97,7 +101,7 @@ class P2000BaseSensor(CoordinatorEntity, SensorEntity):
         base = self._base_attributes()
         if not alert:
             return base
-        return {
+        attributes = {
             **base,
             "id": alert.id,
             "message": alert.message,
@@ -110,6 +114,9 @@ class P2000BaseSensor(CoordinatorEntity, SensorEntity):
             "raw_text": alert.raw_text,
             "source_feed_url": alert.source_feed_url,
         }
+        if isinstance(self.coordinator, P2000ApiCoordinator):
+            attributes.update(self.coordinator.get_api_metadata(alert.id))
+        return attributes
 
 
 class P2000LastAlertSensor(P2000BaseSensor):
